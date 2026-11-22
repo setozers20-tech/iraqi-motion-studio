@@ -1,0 +1,404 @@
+
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Iraqi Motion Studio</title>
+<style>
+*{box-sizing:border-box}
+body{
+ margin:0;background:#10131d;color:#fff;
+ font-family:Arial,sans-serif;padding:20px
+}
+.app{max-width:1050px;margin:auto}
+h1{font-size:25px;color:#b9a0ff}
+p{color:#aeb5c8}
+.panel{
+ background:#1c2232;padding:16px;
+ border-radius:14px;margin:15px 0
+}
+label{display:block;margin:12px 0 6px}
+input,textarea,button{
+ width:100%;padding:12px;border-radius:8px;
+ border:1px solid #414b64;background:#293146;
+ color:white;font-size:15px
+}
+textarea{min-height:75px;resize:vertical}
+button{background:#7455db;border:0;font-weight:bold;margin-top:12px}
+button.secondary{background:#39435a}
+button:disabled{opacity:.5}
+canvas{
+ width:100%;height:auto;display:block;
+ background:#080d1b;border-radius:12px
+}
+.row{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.status{font-size:13px;color:#b9a0ff;margin-top:10px}
+@media(max-width:550px){.row{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+<div class="app">
+<h1>IRAQI MOTION STUDIO</h1>
+<p>AI Motion Graphics Production Engine — Version 1.0</p>
+
+<div class="panel">
+<label>عنوان المشهد</label>
+<input id="title" value="قصة تبدأ من هنا">
+
+<label>النص التوضيحي</label>
+<textarea id="subtitle">نحو تجربة بصرية مختلفة وأكثر احترافية</textarea>
+
+<div class="row">
+<div>
+<label>لون التصميم</label>
+<input id="accent" type="color" value="#9875ff">
+</div>
+<div>
+<label>مدة المشهد بالثواني</label>
+<input id="duration" type="number" min="5" max="120" value="15">
+</div>
+</div>
+
+<label>إضافة صورة</label>
+<input id="imageInput" type="file" accept="image/*">
+
+<label>إضافة ملف صوتي</label>
+<input id="audioInput" type="file" accept="audio/*">
+</div>
+
+<div class="panel">
+<canvas id="stage" width="1280" height="720"></canvas>
+
+<div class="row">
+<button id="play">▶ تشغيل المعاينة</button>
+<button id="pause" class="secondary">Ⅱ إيقاف</button>
+</div>
+
+<button id="export">تسجيل وتصدير الفيديو WebM</button>
+<div class="status" id="status">جاهز للمعاينة</div>
+</div>
+</div>
+
+<audio id="audio" preload="auto"></audio>
+
+<script>
+"use strict";
+
+const $ = id => document.getElementById(id);
+const canvas = $("stage");
+const ctx = canvas.getContext("2d");
+
+let photo = null;
+let running = false;
+let exporting = false;
+let startTime = 0;
+let elapsed = 0;
+let raf = 0;
+let audioURL = null;
+
+const W = canvas.width;
+const H = canvas.height;
+
+function duration(){
+ return Math.max(5,Math.min(120,Number($("duration").value)||15));
+}
+
+function ease(t){
+ t=Math.max(0,Math.min(1,t));
+ return 1-Math.pow(1-t,3);
+}
+
+function roundedText(text,x,y,size,color,weight="bold"){
+ ctx.font=weight+" "+size+"px Arial";
+ ctx.textAlign="center";
+ ctx.direction="rtl";
+ ctx.fillStyle=color;
+ ctx.fillText(text,x,y);
+}
+
+function drawBackground(t,color){
+ const g=ctx.createLinearGradient(0,0,W,H);
+ g.addColorStop(0,"#10182c");
+ g.addColorStop(1,"#080b16");
+ ctx.fillStyle=g;
+ ctx.fillRect(0,0,W,H);
+
+ ctx.save();
+ ctx.globalAlpha=.12;
+ ctx.strokeStyle=color;
+ ctx.lineWidth=1;
+ for(let x=0;x<W;x+=65){
+  ctx.beginPath();
+  ctx.moveTo(x,0);ctx.lineTo(x,H);ctx.stroke();
+ }
+ for(let y=0;y<H;y+=65){
+  ctx.beginPath();
+  ctx.moveTo(0,y);ctx.lineTo(W,y);ctx.stroke();
+ }
+ ctx.restore();
+
+ const pulse=1+Math.sin(t*1.5)*.06;
+ const glow=ctx.createRadialGradient(
+  W*.5,H*.45,20,W*.5,H*.45,450*pulse
+ );
+ glow.addColorStop(0,color+"30");
+ glow.addColorStop(1,"transparent");
+ ctx.fillStyle=glow;
+ ctx.fillRect(0,0,W,H);
+}
+
+function drawImage(t){
+ if(!photo)return;
+
+ const progress=ease(t/1.1);
+ const scale=1.04-progress*.04;
+ const iw=photo.width,ih=photo.height;
+ const fit=Math.max(W*.44/iw,H*.58/ih);
+ const sw=iw*fit*scale,sh=ih*fit*scale;
+ const x=W*.72-sw/2;
+ const y=H*.48-sh/2;
+
+ ctx.save();
+ ctx.globalAlpha=ease(t/.8);
+ ctx.shadowColor="#000";
+ ctx.shadowBlur=35;
+ ctx.drawImage(photo,x,y,sw,sh);
+ ctx.restore();
+}
+
+function draw(t){
+ const color=$("accent").value;
+ const title=$("title").value;
+ const subtitle=$("subtitle").value;
+ const intro=ease(t/.9);
+ const exit=1-ease((t-duration()+.65)/.65);
+
+ ctx.clearRect(0,0,W,H);
+ drawBackground(t,color);
+
+ // Animated accent line
+ ctx.save();
+ ctx.globalAlpha=intro*exit;
+ ctx.fillStyle=color;
+ ctx.fillRect(W*.08,H*.28,Math.min(W*.84,t*700),5);
+ ctx.restore();
+
+ drawImage(t);
+
+ const hasImage=!!photo;
+ const textX=hasImage?W*.30:W*.5;
+ const textY=H*.45;
+ const movement=(1-intro)*55;
+
+ ctx.save();
+ ctx.globalAlpha=intro*exit;
+ ctx.translate(0,movement);
+
+ roundedText(
+  title,textX,textY,
+  hasImage?52:76,"#ffffff"
+ );
+
+ ctx.font="30px Arial";
+ ctx.textAlign="center";
+ ctx.textBaseline="top";
+ ctx.direction="rtl";
+ ctx.fillStyle="#c5cce0";
+
+ const words=subtitle.split(/\s+/);
+ let line="",lines=[],maxWidth=hasImage?500:900;
+ for(const word of words){
+  const test=line?line+" "+word:word;
+  if(ctx.measureText(test).width>maxWidth&&line){
+   lines.push(line);line=word;
+  }else line=test;
+ }
+ if(line)lines.push(line);
+
+ lines.slice(0,4).forEach((item,i)=>{
+  ctx.fillText(item,textX,textY+45+i*42);
+ });
+
+ ctx.restore();
+
+ // Progress indicator
+ const progress=Math.min(1,t/duration());
+ ctx.fillStyle="#ffffff30";
+ ctx.fillRect(W*.08,H*.91,W*.84,5);
+ ctx.fillStyle=color;
+ ctx.fillRect(W*.08,H*.91,W*.84*progress,5);
+
+ roundedText(
+  "IRAQI MOTION STUDIO",
+  W*.5,H*.96,17,"#8993ad","normal"
+ );
+}
+
+function frame(){
+ if(!running)return;
+ elapsed=(performance.now()-startTime)/1000;
+ if(elapsed>=duration()){
+  elapsed=duration();
+  running=false;
+  draw(elapsed);
+  if($("audio").src)$("audio").pause();
+  $("status").textContent="انتهى المشهد";
+  return;
+ }
+ draw(elapsed);
+ raf=requestAnimationFrame(frame);
+}
+
+function play(){
+ if(running)return;
+ if(elapsed>=duration())elapsed=0;
+ running=true;
+ startTime=performance.now()-elapsed*1000;
+ if($("audio").src){
+  $("audio").currentTime=elapsed;
+  $("audio").play().catch(()=>{});
+ }
+ $("status").textContent="المشهد قيد التشغيل";
+ raf=requestAnimationFrame(frame);
+}
+
+function pause(){
+ running=false;
+ cancelAnimationFrame(raf);
+ if($("audio").src)$("audio").pause();
+ $("status").textContent="تم إيقاف المعاينة";
+}
+
+$("imageInput").addEventListener("change",e=>{
+ const file=e.target.files[0];
+ if(!file)return;
+ const url=URL.createObjectURL(file);
+ const img=new Image();
+ img.onload=()=>{
+  if(photo&&photo._url)URL.revokeObjectURL(photo._url);
+  photo=img;
+  photo._url=url;
+  draw(elapsed);
+ };
+ img.onerror=()=>URL.revokeObjectURL(url);
+ img.src=url;
+});
+
+$("audioInput").addEventListener("change",e=>{
+ const file=e.target.files[0];
+ if(!file)return;
+ pause();
+ if(audioURL)URL.revokeObjectURL(audioURL);
+ audioURL=URL.createObjectURL(file);
+ $("audio").src=audioURL;
+ $("audio").load();
+ elapsed=0;
+ draw(0);
+ $("status").textContent="تم تحميل الصوت";
+});
+
+["title","subtitle","accent","duration"].forEach(id=>{
+ $(id).addEventListener("input",()=>draw(elapsed));
+});
+
+$("play").onclick=play;
+$("pause").onclick=pause;
+
+$("export").onclick=async()=>{
+ if(exporting)return;
+ if(!window.MediaRecorder||
+    !canvas.captureStream||
+    !HTMLCanvasElement.prototype.captureStream){
+  $("status").textContent="المتصفح لا يدعم تسجيل الفيديو";
+  return;
+ }
+
+ const audio=$("audio");
+ if(!audio.src){
+  $("status").textContent="أضف ملفاً صوتياً أولاً";
+  return;
+ }
+
+ try{
+  pause();
+  exporting=true;
+  $("export").disabled=true;
+  elapsed=0;
+  draw(0);
+
+  const videoStream=canvas.captureStream(30);
+  const audioStream=audio.captureStream?
+    audio.captureStream():
+    audio.mozCaptureStream?.();
+
+  if(!audioStream||!audioStream.getAudioTracks().length){
+   throw new Error("تعذر التقاط الصوت من المتصفح");
+  }
+
+  const stream=new MediaStream([
+   ...videoStream.getVideoTracks(),
+   ...audioStream.getAudioTracks()
+  ]);
+
+  const types=[
+   "video/webm;codecs=vp9,opus",
+   "video/webm;codecs=vp8,opus",
+   "video/webm"
+  ];
+  const mime=types.find(t=>MediaRecorder.isTypeSupported(t));
+  const recorder=new MediaRecorder(stream,mime?{mimeType:mime}:{});
+  const chunks=[];
+
+  recorder.ondataavailable=e=>{
+   if(e.data.size)chunks.push(e.data);
+  };
+
+  recorder.onstop=()=>{
+   const blob=new Blob(chunks,{type:recorder.mimeType||"video/webm"});
+   const url=URL.createObjectURL(blob);
+   const a=document.createElement("a");
+   a.href=url;
+   a.download="iraqi-motion-studio.webm";
+   a.click();
+   setTimeout(()=>URL.revokeObjectURL(url),60000);
+   stream.getTracks().forEach(t=>t.stop());
+   exporting=false;
+   $("export").disabled=false;
+   $("status").textContent="اكتمل التصدير";
+  };
+
+  recorder.start();
+  audio.currentTime=0;
+  await audio.play();
+
+  const exportStart=performance.now();
+  running=true;
+  startTime=exportStart;
+  $("status").textContent="جاري تسجيل الفيديو...";
+
+  function exportFrame(){
+   if(!exporting)return;
+   elapsed=(performance.now()-exportStart)/1000;
+   draw(Math.min(elapsed,duration()));
+   if(elapsed<duration()&&!audio.ended){
+    requestAnimationFrame(exportFrame);
+   }else{
+    running=false;
+    audio.pause();
+    recorder.stop();
+   }
+  }
+  requestAnimationFrame(exportFrame);
+
+ }catch(error){
+  exporting=false;
+  $("export").disabled=false;
+  $("status").textContent="تعذر التصدير: "+error.message;
+ }
+};
+
+draw(0);
+</script>
+</body>
+</html>
