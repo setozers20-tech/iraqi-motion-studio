@@ -11,8 +11,8 @@ body{
  font-family:Arial,sans-serif;padding:20px
 }
 .app{max-width:1050px;margin:auto}
-h1{font-size:25px;color:#b9a0ff}
-p{color:#aeb5c8}
+h1{font-size:25px;color:#b9a0ff;margin:0 0 6px}
+p{color:#aeb5c8;margin:0 0 14px}
 .panel{
  background:#1c2232;padding:16px;
  border-radius:14px;margin:15px 0
@@ -21,21 +21,21 @@ label{display:block;margin:12px 0 6px}
 input,textarea,select,button{
  width:100%;padding:12px;border-radius:8px;
  border:1px solid #414b64;background:#293146;
- color:white;font-size:15px
+ color:#fff;font-size:15px
 }
 textarea{min-height:75px;resize:vertical}
-button{background:#7455db;border:0;font-weight:bold;margin-top:12px}
+button{background:#7455db;border:0;font-weight:bold;margin-top:12px;cursor:pointer}
 button.secondary{background:#39435a}
-button:disabled{opacity:.5}
+button:disabled{opacity:.5;cursor:not-allowed}
 canvas{
  width:100%;max-height:540px;object-fit:contain;display:block;
  background:#080d1b;border-radius:12px;margin:auto
 }
 .row{display:grid;grid-template-columns:1fr 1fr;gap:12px}
 .director-box{
- background:#131927;border-right:4px solid #9875ff;
- padding:12px;border-radius:8px;margin-top:12px;
- font-size:14px;line-height:1.6;color:#d6dcf0
+ background:#121826;border-right:4px solid #9875ff;
+ padding:12px;border-radius:8px;margin-top:14px;
+ font-size:14px;line-height:1.65;color:#dce2f5
 }
 .status{font-size:13px;color:#b9a0ff;margin-top:10px}
 @media(max-width:550px){.row{grid-template-columns:1fr}}
@@ -119,33 +119,32 @@ canvas{
 <label>إضافة ملف صوتي خارجي (اختياري)</label>
 <input id="audioInput" type="file" accept="audio/*">
 
-<div class="director-box" id="directorBrief">
-جاري تحليل الفكرة والمشهد...
-</div>
+<div class="director-box" id="directorBrief">جاري تحليل الفكرة والمشهد...</div>
 </div>
 
 <div class="panel">
 <canvas id="stage" width="1280" height="720"></canvas>
 
 <div class="row">
-<button id="play">▶ تشغيل المعاينة</button>
-<button id="pause" class="secondary">Ⅱ إيقاف</button>
+<button id="play" type="button">▶ تشغيل المعاينة</button>
+<button id="pause" type="button" class="secondary">Ⅱ إيقاف</button>
 </div>
 
-<button id="export">تسجيل وتصدير الفيديو WebM</button>
+<button id="export" type="button">تسجيل وتصدير الفيديو WebM</button>
 <div class="status" id="status">جاهز للمعاينة</div>
 </div>
 </div>
 
-<video id="video" playsinline preload="auto" style="display:none"></video>
+<video id="video" playsinline preload="auto" muted style="display:none"></video>
 <audio id="audio" preload="auto"></audio>
 
 <script>
+(function(){
 "use strict";
 
 const $ = id => document.getElementById(id);
 const canvas = $("stage");
-const ctx = canvas.getContext("2d");
+const ctx = canvas ? canvas.getContext("2d") : null;
 const videoEl = $("video");
 const audioEl = $("audio");
 
@@ -158,11 +157,10 @@ let elapsed = 0;
 let raf = 0;
 let audioURL = null;
 let videoURL = null;
+let W = canvas ? canvas.width : 1280;
+let H = canvas ? canvas.height : 720;
 
-let W = canvas.width;
-let H = canvas.height;
-
-const particles = Array.from({length: 28}, (_, i) => ({
+const particles = Array.from({length: 26}, (_, i) => ({
  rx: ((i * 73) % 100) / 100,
  ry: ((i * 41) % 100) / 100,
  r: 2.5 + (i % 4) * 1.4,
@@ -170,613 +168,533 @@ const particles = Array.from({length: 28}, (_, i) => ({
  phase: i * 0.7
 }));
 
-function detectLanguageDirection(text){
- const arabicChars = (text.match(/[\u0600-\u06FF]/g) || []).length;
- const latinChars = (text.match(/[A-Za-z]/g) || []).length;
- if(arabicChars === 0 && latinChars > 0) return "ltr";
- if(latinChars > arabicChars * 1.5) return "ltr";
+function detectDir(text){
+ const ar = (text.match(/[\u0600-\u06FF]/g) || []).length;
+ const en = (text.match(/[A-Za-z]/g) || []).length;
+ if(ar === 0 && en > 0) return "ltr";
+ if(en > ar * 1.5) return "ltr";
  return "rtl";
 }
 
-function analyzeIdea(title, subtitle, hasVid, hasImg, isPortrait){
+function analyzeIdea(title, subtitle, vidActive, imgActive, isPortrait){
  const combined = (title + " " + subtitle).trim();
- const wordsCount = combined.split(/\s+/).filter(Boolean).length;
- const dir = detectLanguageDirection(combined);
+ const words = combined.split(/\s+/).filter(Boolean).length;
+ const dir = detectDir(combined);
 
- const urgentPattern = /(عاجل|تنبيه|خطير|مهم|سر|تحذير|احذر|لا تفوت|الآن|urgent|warning|alert|breaking|important|stop)/i;
- const questionPattern = /[؟?]|(لماذا|كيف|متى|أين|هل|what|why|how|when|where|who)/i;
- const statsPattern = /(\d+%|\d+\s*(مليون|ألف|سنة|يوم|خطوة|سبب|million|thousand|years|days|steps))/i;
+ const isAlert = /(عاجل|تنبيه|خطير|مهم|سر|تحذير|احذر|لا تفوت|الآن|urgent|warning|alert|breaking|important|stop)/i.test(combined);
+ const isQuestion = /[؟?]|(لماذا|كيف|متى|أين|هل|what|why|how|when|where|who)/i.test(combined);
+ const isData = /(\d+%|\d+\s*(مليون|ألف|سنة|يوم|خطوة|سبب|million|thousand|years|days|steps))/i.test(combined);
 
  let importance = "medium";
  let intent = "editorial";
- if(urgentPattern.test(combined) || (title.trim().length > 0 && title.trim().split(/\s+/).length <= 3)){
+ if(isAlert || (title.trim().length > 0 && title.trim().split(/\s+/).length <= 3)){
   importance = "high";
-  intent = urgentPattern.test(combined) ? "alert" : "hook";
- }else if(questionPattern.test(combined)){
-  importance = "medium";
+  intent = isAlert ? "alert" : "hook";
+ }else if(isQuestion){
   intent = "question";
- }else if(statsPattern.test(combined)){
+ }else if(isData){
   importance = "high";
   intent = "data";
- }else if(wordsCount > 24){
+ }else if(words > 24){
   importance = "detailed";
   intent = "narrative";
  }
 
- const chosenLayout = $("layoutMode").value !== "auto"
-  ? $("layoutMode").value
-  : hasVid
+ const layoutSel = $("layoutMode") ? $("layoutMode").value : "auto";
+ const motionSel = $("motionMode") ? $("motionMode").value : "auto";
+
+ const layout = layoutSel !== "auto"
+  ? layoutSel
+  : vidActive
     ? "lowerThird"
-    : (hasImg && !isPortrait)
+    : (imgActive && !isPortrait)
       ? "split"
-      : (importance === "high" && wordsCount <= 12)
+      : (importance === "high" && words <= 12)
         ? "hero"
         : "card";
 
- const chosenMotion = $("motionMode").value !== "auto"
-  ? $("motionMode").value
+ const motion = motionSel !== "auto"
+  ? motionSel
   : (intent === "alert" || intent === "hook" || intent === "data")
     ? "snappy"
     : (intent === "question" || intent === "narrative")
       ? "cinematic"
       : "editorial";
 
- const titleScale = importance === "high" ? 1.16 : importance === "detailed" ? 0.90 : 1.0;
- const subScale = wordsCount > 20 ? 0.85 : importance === "high" ? 1.04 : 1.0;
+ const titleScale = importance === "high" ? 1.15 : importance === "detailed" ? 0.90 : 1.0;
+ const subScale = words > 20 ? 0.85 : importance === "high" ? 1.04 : 1.0;
 
- const langLabel = dir === "ltr" ? "نص أجنبي (يسار ← يمين)" : "نص عربي (يمين ← يسار)";
- const intentLabel = {
+ const langText = dir === "ltr" ? "نص أجنبي (LTR)" : "نص عربي (RTL)";
+ const intentText = {
   alert: "تنبيه/تركيز حاسم",
-  hook: "افتتاحية خاطفة للانتباه",
+  hook: "افتتاحية خاطفة",
   question: "تساؤل تفاعلي",
-  data: "معلومة/إحصاء بارز",
+  data: "إحصاء/معلومة بارزة",
   narrative: "سرد تفصيلي",
   editorial: "طرح تحريري متزن"
  }[intent];
 
- const layoutLabel = {
-  lowerThird: "عنوان سفلي لحماية منطقة المتحدث والفيديو",
+ const layoutText = {
+  lowerThird: "عنوان سفلي يحمي منطقة المتحدث/الفيديو",
   split: "تقسيم متوازن بين النص والصورة",
   hero: "تركيز مركزي عالي التأثير",
-  card: "بطاقة تحريرية منظمة"
- }[chosenLayout];
+  card: "بطاقة تحريرية مؤطرة"
+ }[layout];
 
- const motionLabel = {
-  snappy: "حركة حاسمة وسريعة الاستجابة",
+ const motionText = {
+  snappy: "حركة حاسمة وسريعة",
   cinematic: "انسياب سينمائي هادئ",
   editorial: "حضور تحريري متزن"
- }[chosenMotion];
+ }[motion];
 
- const summary = `مهندس التصميم: ${langLabel} • ${intentLabel} • القرار: ${layoutLabel} مع ${motionLabel}.`;
-
- return {
-  dir,
-  importance,
-  intent,
-  chosenLayout,
-  chosenMotion,
-  titleScale,
-  subScale,
-  summary
- };
+ const brief = `مهندس التصميم: ${langText} • ${intentText} • القرار: ${layoutText} مع ${motionText}.`;
+ return { dir, layout, motion, titleScale, subScale, brief };
 }
 
 function applyAspectRatio(){
- const ratio = $("aspectRatio").value;
- if(ratio === "9:16"){
-  canvas.width = 720;
-  canvas.height = 1280;
- }else if(ratio === "1:1"){
-  canvas.width = 1080;
-  canvas.height = 1080;
- }else{
-  canvas.width = 1280;
-  canvas.height = 720;
- }
+ if(!canvas || !$("aspectRatio")) return;
+ const r = $("aspectRatio").value;
+ if(r === "9:16"){ canvas.width = 720; canvas.height = 1280; }
+ else if(r === "1:1"){ canvas.width = 1080; canvas.height = 1080; }
+ else{ canvas.width = 1280; canvas.height = 720; }
  W = canvas.width;
  H = canvas.height;
 }
 
-function duration(){
- return Math.max(5,Math.min(120,Number($("duration").value)||15));
+function getDuration(){
+ const val = $("duration") ? Number($("duration").value) : 15;
+ return Math.max(5, Math.min(120, val || 15));
 }
 
 function ease(t, mode){
- t=Math.max(0,Math.min(1,t));
- if(mode === "snappy"){
-  return 1-Math.pow(1-t,4);
- }
- if(mode === "cinematic"){
-  return t < 0.5 ? 2*t*t : 1 - Math.pow(-2*t+2,2)/2;
- }
- return 1-Math.pow(1-t,3);
+ t = Math.max(0, Math.min(1, t));
+ if(mode === "snappy") return 1 - Math.pow(1 - t, 4);
+ if(mode === "cinematic") return t < 0.5 ? 2 * t * t : 1 - Math.pow(-2 * t + 2, 2) / 2;
+ return 1 - Math.pow(1 - t, 3);
 }
 
-function drawStyledText(text,x,y,size,color,dir,align="center",weight="bold"){
- ctx.font=weight+" "+size+"px Arial";
- ctx.textAlign=align;
- ctx.direction=dir;
- ctx.fillStyle=color;
- ctx.fillText(text,x,y);
+function drawText(text, x, y, size, color, dir, align, weight){
+ if(!ctx || !text) return;
+ ctx.save();
+ ctx.font = (weight || "bold") + " " + size + "px Arial";
+ ctx.textAlign = align || "center";
+ ctx.direction = dir || "rtl";
+ ctx.fillStyle = color || "#fff";
+ ctx.fillText(text, x, y);
+ ctx.restore();
 }
 
-function drawVideoLayer(t,color){
- if(!hasVideo || videoEl.readyState < 2) return;
+function drawVideo(t, color){
+ if(!ctx || !hasVideo || !videoEl || videoEl.readyState < 2) return;
  const vw = videoEl.videoWidth || W;
  const vh = videoEl.videoHeight || H;
- const coverScale = Math.max(W/vw, H/vh);
- const sw = vw * coverScale;
- const sh = vh * coverScale;
- const vx = (W - sw) / 2;
- const vy = (H - sh) / 2;
-
+ const scale = Math.max(W / vw, H / vh);
+ const sw = vw * scale;
+ const sh = vh * scale;
  ctx.save();
- ctx.drawImage(videoEl, vx, vy, sw, sh);
-
- // Subtle contrast scrim so typography and graphics stay crisp over any video
- const grad = ctx.createLinearGradient(0, H*0.35, 0, H);
+ ctx.drawImage(videoEl, (W - sw) / 2, (H - sh) / 2, sw, sh);
+ const grad = ctx.createLinearGradient(0, H * 0.35, 0, H);
  grad.addColorStop(0, "rgba(8,13,27,0.12)");
  grad.addColorStop(0.65, "rgba(8,13,27,0.45)");
  grad.addColorStop(1, "rgba(8,13,27,0.82)");
  ctx.fillStyle = grad;
  ctx.fillRect(0, 0, W, H);
-
  ctx.strokeStyle = color + "45";
  ctx.lineWidth = 2;
- ctx.strokeRect(W*0.03, H*0.03, W*0.94, H*0.94);
+ ctx.strokeRect(W * 0.03, H * 0.03, W * 0.94, H * 0.94);
  ctx.restore();
 }
 
-function drawBackground(t,color,motionMode){
- if(hasVideo){
-  drawVideoLayer(t,color);
-  return;
- }
+function drawBg(t, color){
+ if(!ctx) return;
+ if(hasVideo){ drawVideo(t, color); return; }
 
- const style = $("bgStyle").value;
- const g=ctx.createLinearGradient(0,0,W,H);
- g.addColorStop(0,"#10182c");
- g.addColorStop(1,"#080b16");
- ctx.fillStyle=g;
- ctx.fillRect(0,0,W,H);
+ const style = $("bgStyle") ? $("bgStyle").value : "grid";
+ const g = ctx.createLinearGradient(0, 0, W, H);
+ g.addColorStop(0, "#10182c");
+ g.addColorStop(1, "#080b16");
+ ctx.fillStyle = g;
+ ctx.fillRect(0, 0, W, H);
 
- const pulse=1+Math.sin(t*1.5)*.06;
- const glow=ctx.createRadialGradient(
-  W*.5,H*.45,20,W*.5,H*.45,Math.max(W,H)*.42*pulse
- );
- glow.addColorStop(0,color+"30");
- glow.addColorStop(1,"transparent");
- ctx.fillStyle=glow;
- ctx.fillRect(0,0,W,H);
+ const pulse = 1 + Math.sin(t * 1.5) * 0.06;
+ const glow = ctx.createRadialGradient(W * 0.5, H * 0.45, 20, W * 0.5, H * 0.45, Math.max(W, H) * 0.42 * pulse);
+ glow.addColorStop(0, color + "30");
+ glow.addColorStop(1, "transparent");
+ ctx.fillStyle = glow;
+ ctx.fillRect(0, 0, W, H);
 
  if(style === "grid"){
   ctx.save();
-  ctx.globalAlpha=.12;
-  ctx.strokeStyle=color;
-  ctx.lineWidth=1;
-  const step = Math.max(48, Math.round(Math.min(W,H) / 11));
-  for(let x=0;x<=W;x+=step){
-   ctx.beginPath();
-   ctx.moveTo(x,0);ctx.lineTo(x,H);ctx.stroke();
-  }
-  for(let y=0;y<=H;y+=step){
-   ctx.beginPath();
-   ctx.moveTo(0,y);ctx.lineTo(W,y);ctx.stroke();
-  }
+  ctx.globalAlpha = 0.12;
+  ctx.strokeStyle = color;
+  ctx.lineWidth = 1;
+  const step = Math.max(48, Math.round(Math.min(W, H) / 11));
+  for(let x = 0; x <= W; x += step){ ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, H); ctx.stroke(); }
+  for(let y = 0; y <= H; y += step){ ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(W, y); ctx.stroke(); }
   ctx.restore();
  }else if(style === "waves"){
   ctx.save();
-  for(let layer=0;layer<3;layer++){
+  for(let layer = 0; layer < 3; layer++){
    ctx.beginPath();
-   const baseY = H*(0.32 + layer*0.18);
-   for(let x=0;x<=W+20;x+=24){
-    const y = baseY + Math.sin(x*0.008 + t*(1.2+layer*0.3) + layer)*28;
-    if(x===0)ctx.moveTo(x,y);
-    else ctx.lineTo(x,y);
+   const baseY = H * (0.32 + layer * 0.18);
+   for(let x = 0; x <= W + 20; x += 24){
+    const y = baseY + Math.sin(x * 0.008 + t * (1.2 + layer * 0.3) + layer) * 28;
+    if(x === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
    }
-   ctx.lineTo(W,H);
-   ctx.lineTo(0,H);
-   ctx.closePath();
-   ctx.fillStyle = color + (layer===0 ? "18" : layer===1 ? "12" : "0c");
+   ctx.lineTo(W, H); ctx.lineTo(0, H); ctx.closePath();
+   ctx.fillStyle = color + (layer === 0 ? "18" : layer === 1 ? "12" : "0c");
    ctx.fill();
   }
   ctx.restore();
- }else if(style === "particles"){
+ }else{
   ctx.save();
-  particles.forEach((p, idx)=>{
-   const px = ((p.rx * W) + Math.sin(t*p.speed + p.phase)*26 + W) % W;
-   const py = ((p.ry * H) + Math.cos(t*p.speed*0.9 + p.phase)*26 + H) % H;
-   ctx.globalAlpha = 0.22 + 0.14*Math.sin(t*2 + idx);
+  particles.forEach((p, idx) => {
+   const px = ((p.rx * W) + Math.sin(t * p.speed + p.phase) * 26 + W) % W;
+   const py = ((p.ry * H) + Math.cos(t * p.speed * 0.9 + p.phase) * 26 + H) % H;
+   ctx.globalAlpha = 0.22 + 0.14 * Math.sin(t * 2 + idx);
    ctx.fillStyle = idx % 3 === 0 ? "#ffffff" : color;
    ctx.beginPath();
-   ctx.arc(px, py, p.r * (Math.min(W,H)/720), 0, Math.PI*2);
+   ctx.arc(px, py, p.r * (Math.min(W, H) / 720), 0, Math.PI * 2);
    ctx.fill();
   });
   ctx.strokeStyle = color + "28";
   ctx.lineWidth = 2;
-  ctx.strokeRect(W*0.05, H*0.06, W*0.90, H*0.88);
+  ctx.strokeRect(W * 0.05, H * 0.06, W * 0.90, H * 0.88);
   ctx.restore();
  }
 }
 
-function drawImageLayer(t, layout, isPortrait, dir, motionMode){
- if(!photo)return;
-
- const durFactor = motionMode === "snappy" ? 0.65 : motionMode === "cinematic" ? 1.2 : 0.95;
- const progress=ease(t/durFactor, motionMode);
- const scale=1.04-progress*.04;
- const iw=photo.width,ih=photo.height;
-
+function drawPhoto(t, layout, isPortrait, dir, motion){
+ if(!ctx || !photo) return;
+ const durF = motion === "snappy" ? 0.65 : motion === "cinematic" ? 1.2 : 0.95;
+ const prog = ease(t / durF, motion);
+ const scale = 1.04 - prog * 0.04;
  let boxW, boxH, cx, cy;
+
  if(layout === "lowerThird"){
-  boxW = W*0.18;
-  boxH = H*0.14;
-  cx = dir === "ltr" ? W*0.15 : W*0.85;
-  cy = H*0.79;
+  boxW = W * 0.18; boxH = H * 0.14;
+  cx = dir === "ltr" ? W * 0.15 : W * 0.85; cy = H * 0.79;
  }else if(layout === "split" && !isPortrait){
-  boxW = W*0.36;
-  boxH = H*0.48;
-  cx = dir === "ltr" ? W*0.74 : W*0.26;
-  cy = H*0.48;
+  boxW = W * 0.36; boxH = H * 0.48;
+  cx = dir === "ltr" ? W * 0.74 : W * 0.26; cy = H * 0.48;
  }else if(isPortrait){
-  boxW = W*0.60;
-  boxH = H*0.24;
-  cx = W*0.5;
-  cy = H*0.64;
+  boxW = W * 0.60; boxH = H * 0.24;
+  cx = W * 0.5; cy = H * 0.64;
  }else{
-  boxW = W*0.34;
-  boxH = H*0.42;
-  cx = dir === "ltr" ? W*0.75 : W*0.25;
-  cy = H*0.46;
+  boxW = W * 0.34; boxH = H * 0.42;
+  cx = dir === "ltr" ? W * 0.75 : W * 0.25; cy = H * 0.46;
  }
 
- const fit=Math.min(boxW/iw, boxH/ih);
- const sw=iw*fit*scale, sh=ih*fit*scale;
- const x=cx-sw/2;
- const y=cy-sh/2;
-
+ const fit = Math.min(boxW / photo.width, boxH / photo.height);
+ const sw = photo.width * fit * scale;
+ const sh = photo.height * fit * scale;
  ctx.save();
- ctx.globalAlpha=ease(t/(durFactor*0.75), motionMode);
- ctx.shadowColor="#000";
- ctx.shadowBlur=30;
- ctx.drawImage(photo,x,y,sw,sh);
+ ctx.globalAlpha = ease(t / (durF * 0.75), motion);
+ ctx.shadowColor = "#000";
+ ctx.shadowBlur = 30;
+ ctx.drawImage(photo, cx - sw / 2, cy - sh / 2, sw, sh);
  ctx.restore();
 }
 
 function draw(t){
- const color=$("accent").value;
- const title=$("title").value;
- const subtitle=$("subtitle").value;
- const isPortrait = H > W;
- const hasImg = !!photo;
+ if(!ctx) return;
+ try{
+  const color = $("accent") ? $("accent").value : "#9875ff";
+  const title = $("title") ? $("title").value : "";
+  const subtitle = $("subtitle") ? $("subtitle").value : "";
+  const isPortrait = H > W;
+  const plan = analyzeIdea(title, subtitle, hasVideo, !!photo, isPortrait);
 
- const plan = analyzeIdea(title, subtitle, hasVideo, hasImg, isPortrait);
- $("directorBrief").textContent = plan.summary;
+  if($("directorBrief")) $("directorBrief").textContent = plan.brief;
 
- const introDur = plan.chosenMotion === "snappy" ? 0.55 : plan.chosenMotion === "cinematic" ? 1.15 : 0.85;
- const intro=ease(t/introDur, plan.chosenMotion);
- const exit=1-ease((t-duration()+.65)/.65, plan.chosenMotion);
- const alpha = Math.max(0, Math.min(1, intro * exit));
+  const dur = getDuration();
+  const introDur = plan.motion === "snappy" ? 0.55 : plan.motion === "cinematic" ? 1.15 : 0.85;
+  const intro = ease(t / introDur, plan.motion);
+  const exit = 1 - ease((t - dur + 0.65) / 0.65, plan.motion);
+  const alpha = Math.max(0, Math.min(1, intro * exit));
+  const move = (1 - intro) * (plan.motion === "snappy" ? 28 : 48);
 
- ctx.clearRect(0,0,W,H);
- drawBackground(t,color,plan.chosenMotion);
+  ctx.clearRect(0, 0, W, H);
+  drawBg(t, color);
 
- const movement=(1-intro)*(plan.chosenMotion === "snappy" ? 30 : 52);
+  if(plan.layout === "lowerThird"){
+   const barW = W * 0.88;
+   const barH = Math.max(132, H * 0.19);
+   const barX = W * 0.06;
+   const barY = H * 0.71 + move * 0.35;
 
- if(plan.chosenLayout === "lowerThird"){
-  const barW = W*0.88;
-  const barH = Math.max(132, H*0.19);
-  const barX = W*0.06;
-  const barY = H*0.71 + movement*0.35;
-
-  ctx.save();
-  ctx.globalAlpha = alpha;
-  ctx.fillStyle = "rgba(11,16,32,0.88)";
-  ctx.fillRect(barX, barY, barW, barH);
-
-  ctx.fillStyle = color;
-  if(plan.dir === "ltr"){
-   ctx.fillRect(barX, barY, 8, barH);
-  }else{
-   ctx.fillRect(barX + barW - 8, barY, 8, barH);
-  }
-
-  drawImageLayer(t, plan.chosenLayout, isPortrait, plan.dir, plan.chosenMotion);
-
-  const tx = hasImg
-   ? (plan.dir === "ltr" ? W*0.54 : W*0.44)
-   : W*0.5;
-  const maxW = hasImg ? W*0.58 : W*0.78;
-  const tSize = Math.round((isPortrait ? 30 : 35) * plan.titleScale);
-  const sSize = Math.round((isPortrait ? 19 : 22) * plan.subScale);
-
-  drawStyledText(title, tx, barY + barH*0.38, tSize, "#ffffff", plan.dir, "center");
-  drawStyledText(subtitle, tx, barY + barH*0.56, sSize, "#d5dcf0", plan.dir, "center", "normal");
-  ctx.restore();
- }else{
-  if(plan.chosenLayout === "card"){
    ctx.save();
-   ctx.globalAlpha = alpha * 0.72;
-   ctx.fillStyle = "rgba(20,28,47,0.85)";
-   ctx.strokeStyle = color + "88";
-   ctx.lineWidth = 2;
-   const padX = W*0.06;
-   const padY = H*0.12;
-   ctx.fillRect(padX, padY, W - padX*2, H - padY*2);
-   ctx.strokeRect(padX, padY, W - padX*2, H - padY*2);
+   ctx.globalAlpha = alpha;
+   ctx.fillStyle = "rgba(11,16,32,0.88)";
+   ctx.fillRect(barX, barY, barW, barH);
+   ctx.fillStyle = color;
+   ctx.fillRect(plan.dir === "ltr" ? barX : barX + barW - 8, barY, 8, barH);
+   drawPhoto(t, plan.layout, isPortrait, plan.dir, plan.motion);
+
+   const tx = photo ? (plan.dir === "ltr" ? W * 0.54 : W * 0.44) : W * 0.5;
+   drawText(title, tx, barY + barH * 0.38, Math.round((isPortrait ? 30 : 35) * plan.titleScale), "#ffffff", plan.dir, "center", "bold");
+   drawText(subtitle, tx, barY + barH * 0.66, Math.round((isPortrait ? 19 : 22) * plan.subScale), "#d5dcf0", plan.dir, "center", "normal");
+   ctx.restore();
+  }else{
+   if(plan.layout === "card"){
+    ctx.save();
+    ctx.globalAlpha = alpha * 0.72;
+    ctx.fillStyle = "rgba(20,28,47,0.85)";
+    ctx.strokeStyle = color + "88";
+    ctx.lineWidth = 2;
+    ctx.fillRect(W * 0.06, H * 0.12, W * 0.88, H * 0.76);
+    ctx.strokeRect(W * 0.06, H * 0.12, W * 0.88, H * 0.76);
+    ctx.restore();
+   }
+
+   ctx.save();
+   ctx.globalAlpha = alpha;
+   ctx.fillStyle = color;
+   ctx.fillRect(W * 0.08, H * 0.24, Math.min(W * 0.84, t * (W * 0.58)), 5);
+   ctx.restore();
+
+   drawPhoto(t, plan.layout, isPortrait, plan.dir, plan.motion);
+
+   let textX = W * 0.5, textY = H * 0.42;
+   let tSize = (isPortrait ? 48 : 64) * plan.titleScale;
+   let sSize = (isPortrait ? 25 : 29) * plan.subScale;
+   let maxW = W * 0.80;
+
+   if(plan.layout === "split" && photo && !isPortrait){
+    textX = plan.dir === "ltr" ? W * 0.28 : W * 0.72;
+    textY = H * 0.44;
+    tSize = 46 * plan.titleScale;
+    maxW = W * 0.42;
+   }else if(photo && isPortrait){
+    textY = H * 0.33;
+    maxW = W * 0.82;
+   }
+
+   ctx.save();
+   ctx.globalAlpha = alpha;
+   ctx.translate(0, move);
+   drawText(title, textX, textY, Math.round(tSize), "#ffffff", plan.dir, "center", "bold");
+
+   ctx.font = Math.round(sSize) + "px Arial";
+   ctx.textAlign = "center";
+   ctx.textBaseline = "top";
+   ctx.direction = plan.dir;
+   ctx.fillStyle = "#d0d7ec";
+
+   const words = subtitle.split(/\s+/).filter(Boolean);
+   let line = "", lines = [];
+   for(const w of words){
+    const test = line ? line + " " + w : w;
+    if(ctx.measureText(test).width > maxW && line){ lines.push(line); line = w; }
+    else line = test;
+   }
+   if(line) lines.push(line);
+   lines.slice(0, 4).forEach((ln, idx) => {
+    ctx.fillText(ln, textX, textY + tSize * 0.75 + idx * (sSize * 1.35));
+   });
    ctx.restore();
   }
 
-  ctx.save();
-  ctx.globalAlpha=alpha;
-  ctx.fillStyle=color;
-  ctx.fillRect(W*.08,H*.24,Math.min(W*.84,t*(W*0.58)),5);
-  ctx.restore();
-
-  drawImageLayer(t, plan.chosenLayout, isPortrait, plan.dir, plan.chosenMotion);
-
-  let textX = W*.5;
-  let textY = H*.42;
-  let titleSize = (isPortrait ? 48 : 64) * plan.titleScale;
-  let subSize = (isPortrait ? 25 : 29) * plan.subScale;
-  let maxWidth = W*.80;
-
-  if(plan.chosenLayout === "split" && hasImg && !isPortrait){
-   textX = plan.dir === "ltr" ? W*0.28 : W*0.72;
-   textY = H*.44;
-   titleSize = 46 * plan.titleScale;
-   maxWidth = W*.42;
-  }else if(hasImg && isPortrait){
-   textY = H*.33;
-   maxWidth = W*.82;
-  }
-
-  ctx.save();
-  ctx.globalAlpha=alpha;
-  ctx.translate(0,movement);
-
-  drawStyledText(title, textX, textY, Math.round(titleSize), "#ffffff", plan.dir, "center");
-
-  ctx.font=Math.round(subSize)+"px Arial";
-  ctx.textAlign="center";
-  ctx.textBaseline="top";
-  ctx.direction=plan.dir;
-  ctx.fillStyle="#d0d7ec";
-
-  const words=subtitle.split(/\s+/).filter(Boolean);
-  let line="",lines=[];
-  for(const word of words){
-   const test=line?line+" "+word:word;
-   if(ctx.measureText(test).width>maxWidth&&line){
-    lines.push(line);line=word;
-   }else line=test;
-  }
-  if(line)lines.push(line);
-
-  lines.slice(0,4).forEach((item,i)=>{
-   ctx.fillText(item,textX,textY + titleSize*0.75 + i*(subSize*1.35));
-  });
-
-  ctx.restore();
+  const prog = Math.min(1, t / dur);
+  ctx.fillStyle = "#ffffff30";
+  ctx.fillRect(W * 0.08, H * 0.91, W * 0.84, 5);
+  ctx.fillStyle = color;
+  ctx.fillRect(W * 0.08, H * 0.91, W * 0.84 * prog, 5);
+  drawText("IRAQI MOTION STUDIO", W * 0.5, H * 0.96, 17, "#8993ad", "ltr", "center", "normal");
+ }catch(err){
+  if($("status")) $("status").textContent = "تنبيه رسم: " + err.message;
  }
-
- // Progress indicator
- const progress=Math.min(1,t/duration());
- ctx.fillStyle="#ffffff30";
- ctx.fillRect(W*.08,H*.91,W*.84,5);
- ctx.fillStyle=color;
- ctx.fillRect(W*.08,H*.91,W*.84*progress,5);
-
- drawStyledText(
-  "IRAQI MOTION STUDIO",
-  W*.5,H*.96,17,"#8993ad","ltr","center","normal"
- );
 }
 
 function frame(){
- if(!running)return;
- elapsed=(performance.now()-startTime)/1000;
- if(elapsed>=duration()){
-  elapsed=duration();
-  running=false;
+ if(!running) return;
+ const dur = getDuration();
+ elapsed = (performance.now() - startTime) / 1000;
+ if(elapsed >= dur){
+  elapsed = dur;
+  running = false;
   draw(elapsed);
-  if(audioEl.src)audioEl.pause();
-  if(hasVideo)videoEl.pause();
-  $("status").textContent="انتهى المشهد";
+  if(audioEl && audioEl.src) audioEl.pause();
+  if(hasVideo && videoEl) videoEl.pause();
+  if($("status")) $("status").textContent = "انتهى المشهد";
   return;
  }
- if(hasVideo && videoEl.readyState >= 2){
-  const targetVidTime = elapsed % Math.max(0.1, videoEl.duration || duration());
-  if(Math.abs(videoEl.currentTime - targetVidTime) > 0.18){
-   videoEl.currentTime = targetVidTime;
-  }
+ if(hasVideo && videoEl && videoEl.readyState >= 2){
+  const targetT = elapsed % Math.max(0.1, videoEl.duration || dur);
+  if(Math.abs(videoEl.currentTime - targetT) > 0.2) videoEl.currentTime = targetT;
  }
  draw(elapsed);
- raf=requestAnimationFrame(frame);
+ raf = requestAnimationFrame(frame);
 }
 
 function play(){
- if(running)return;
- if(elapsed>=duration())elapsed=0;
- running=true;
- startTime=performance.now()-elapsed*1000;
- if(audioEl.src){
-  audioEl.currentTime=elapsed;
+ if(running) return;
+ const dur = getDuration();
+ if(elapsed >= dur) elapsed = 0;
+ running = true;
+ startTime = performance.now() - elapsed * 1000;
+ if(audioEl && audioEl.src){
+  audioEl.currentTime = elapsed;
   audioEl.play().catch(()=>{});
  }
- if(hasVideo){
-  videoEl.currentTime=elapsed % Math.max(0.1, videoEl.duration || duration());
+ if(hasVideo && videoEl){
+  videoEl.currentTime = elapsed % Math.max(0.1, videoEl.duration || dur);
   videoEl.play().catch(()=>{});
  }
- $("status").textContent="المشهد قيد التشغيل";
- raf=requestAnimationFrame(frame);
+ if($("status")) $("status").textContent = "المشهد قيد التشغيل";
+ raf = requestAnimationFrame(frame);
 }
 
 function pause(){
- running=false;
+ running = false;
  cancelAnimationFrame(raf);
- if(audioEl.src)audioEl.pause();
- if(hasVideo)videoEl.pause();
- $("status").textContent="تم إيقاف المعاينة";
+ if(audioEl && audioEl.src) audioEl.pause();
+ if(hasVideo && videoEl) videoEl.pause();
+ if($("status")) $("status").textContent = "تم إيقاف المعاينة";
 }
 
-$("aspectRatio").addEventListener("change",()=>{
- applyAspectRatio();
- draw(elapsed);
-});
-
-$("videoInput").addEventListener("change",e=>{
- const file=e.target.files[0];
- if(!file)return;
- pause();
- if(videoURL)URL.revokeObjectURL(videoURL);
- videoURL=URL.createObjectURL(file);
- videoEl.src=videoURL;
- videoEl.muted=true;
- videoEl.load();
- videoEl.onloadeddata=()=>{
-  hasVideo=true;
-  elapsed=0;
-  videoEl.currentTime=0;
-  draw(0);
-  $("status").textContent="تم تحميل الفيديو وحلل مهندس التصميم المشهد";
- };
-});
-
-$("imageInput").addEventListener("change",e=>{
- const file=e.target.files[0];
- if(!file)return;
- const url=URL.createObjectURL(file);
- const img=new Image();
- img.onload=()=>{
-  if(photo&&photo._url)URL.revokeObjectURL(photo._url);
-  photo=img;
-  photo._url=url;
-  draw(elapsed);
- };
- img.onerror=()=>URL.revokeObjectURL(url);
- img.src=url;
-});
-
-$("audioInput").addEventListener("change",e=>{
- const file=e.target.files[0];
- if(!file)return;
- pause();
- if(audioURL)URL.revokeObjectURL(audioURL);
- audioURL=URL.createObjectURL(file);
- audioEl.src=audioURL;
- audioEl.load();
- elapsed=0;
- draw(0);
- $("status").textContent="تم تحميل الصوت";
-});
-
-["title","subtitle","layoutMode","motionMode","bgStyle","accent","duration"].forEach(id=>{
- $(id).addEventListener("input",()=>draw(elapsed));
- $(id).addEventListener("change",()=>draw(elapsed));
-});
-
-$("play").onclick=play;
-$("pause").onclick=pause;
-
-$("export").onclick=async()=>{
- if(exporting)return;
- if(!window.MediaRecorder||
-    !canvas.captureStream||
-    !HTMLCanvasElement.prototype.captureStream){
-  $("status").textContent="المتصفح لا يدعم تسجيل الفيديو";
-  return;
- }
-
- if(!audioEl.src){
-  $("status").textContent="أضف ملفاً صوتياً أولاً";
-  return;
- }
-
- try{
+if($("aspectRatio")){
+ $("aspectRatio").addEventListener("change", () => { applyAspectRatio(); draw(elapsed); });
+}
+if($("videoInput")){
+ $("videoInput").addEventListener("change", e => {
+  const f = e.target.files && e.target.files[0];
+  if(!f) return;
   pause();
-  exporting=true;
-  $("export").disabled=true;
-  elapsed=0;
-  if(hasVideo)videoEl.currentTime=0;
+  if(videoURL) URL.revokeObjectURL(videoURL);
+  videoURL = URL.createObjectURL(f);
+  hasVideo = true;
+  elapsed = 0;
+  videoEl.src = videoURL;
+  videoEl.load();
+  videoEl.onloadeddata = () => {
+   videoEl.currentTime = 0;
+   draw(0);
+   if($("status")) $("status").textContent = "تم تحميل الفيديو وفعّل مهندس التصميم حماية المشهد";
+  };
   draw(0);
-
-  const videoStream=canvas.captureStream(30);
-  const audioStream=audioEl.captureStream?
-    audioEl.captureStream():
-    audioEl.mozCaptureStream?.();
-
-  if(!audioStream||!audioStream.getAudioTracks().length){
-   throw new Error("تعذر التقاط الصوت من المتصفح");
-  }
-
-  const stream=new MediaStream([
-   ...videoStream.getVideoTracks(),
-   ...audioStream.getAudioTracks()
-  ]);
-
-  const types=[
-   "video/webm;codecs=vp9,opus",
-   "video/webm;codecs=vp8,opus",
-   "video/webm"
-  ];
-  const mime=types.find(t=>MediaRecorder.isTypeSupported(t));
-  const recorder=new MediaRecorder(stream,mime?{mimeType:mime}:{});
-  const chunks=[];
-
-  recorder.ondataavailable=e=>{
-   if(e.data.size)chunks.push(e.data);
+ });
+}
+if($("imageInput")){
+ $("imageInput").addEventListener("change", e => {
+  const f = e.target.files && e.target.files[0];
+  if(!f) return;
+  const u = URL.createObjectURL(f);
+  const img = new Image();
+  img.onload = () => {
+   if(photo && photo._url) URL.revokeObjectURL(photo._url);
+   photo = img;
+   photo._url = u;
+   draw(elapsed);
   };
+  img.onerror = () => URL.revokeObjectURL(u);
+  img.src = u;
+ });
+}
+if($("audioInput")){
+ $("audioInput").addEventListener("change", e => {
+  const f = e.target.files && e.target.files[0];
+  if(!f) return;
+  pause();
+  if(audioURL) URL.revokeObjectURL(audioURL);
+  audioURL = URL.createObjectURL(f);
+  audioEl.src = audioURL;
+  audioEl.load();
+  elapsed = 0;
+  draw(0);
+  if($("status")) $("status").textContent = "تم تحميل الصوت";
+ });
+}
 
-  recorder.onstop=()=>{
-   const blob=new Blob(chunks,{type:recorder.mimeType||"video/webm"});
-   const url=URL.createObjectURL(blob);
-   const a=document.createElement("a");
-   a.href=url;
-   a.download="iraqi-motion-studio.webm";
-   a.click();
-   setTimeout(()=>URL.revokeObjectURL(url),60000);
-   stream.getTracks().forEach(t=>t.stop());
-   exporting=false;
-   $("export").disabled=false;
-   $("status").textContent="اكتمل التصدير
-    ";
-  };
-
-  recorder.start();
-  audioEl.currentTime=0;
-  await audioEl.play();
-  if(hasVideo)await videoEl.play().catch(()=>{});
-
-  const exportStart=performance.now();
-  running=true;
-  startTime=exportStart;
-  $("status").textContent="جاري تسجيل الفيديو...";
-
-  function exportFrame(){
-   if(!exporting)return;
-   elapsed=(performance.now()-exportStart)/1000;
-   draw(Math.min(elapsed,duration()));
-   if(elapsed<duration()&&!audioEl.ended){
-    requestAnimationFrame(exportFrame);
-   }else{
-    running=false;
-    audioEl.pause();
-    if(hasVideo)videoEl.pause();
-    recorder.stop();
-   }
-  }
-  requestAnimationFrame(exportFrame);
-
- }catch(error){
-  exporting=false;
-  $("export").disabled=false;
-  $("status").textContent="تعذر التصدير: "+error.message;
+["title","subtitle","layoutMode","motionMode","bgStyle","accent","duration"].forEach(id => {
+ const el = $(id);
+ if(el){
+  el.addEventListener("input", () => draw(elapsed));
+  el.addEventListener("change", () => draw(elapsed));
  }
-};
+});
+
+if($("play")) $("play").onclick = play;
+if($("pause")) $("pause").onclick = pause;
+ if($("export")){
+ $("export").onclick = async () => {
+  if(exporting) return;
+  if(!window.MediaRecorder || !canvas || !canvas.captureStream){
+   if($("status")) $("status").textContent = "المتصفح لا يدعم تسجيل الفيديو";
+   return;
+  }
+  if(!audioEl || !audioEl.src){
+   if($("status")) $("status").textContent = "أضف ملفاً صوتياً أولاً";
+   return;
+  }
+  try{
+   pause();
+   exporting = true;
+   $("export").disabled = true;
+   elapsed = 0;
+   if(hasVideo && videoEl) videoEl.currentTime = 0;
+   draw(0);
+
+   const vStream = canvas.captureStream(30);
+   const aStream = audioEl.captureStream ? audioEl.captureStream() : audioEl.mozCaptureStream?.();
+   if(!aStream || !aStream.getAudioTracks().length) throw new Error("تعذر التقاط الصوت من المتصفح");
+
+   const stream = new MediaStream([...vStream.getVideoTracks(), ...aStream.getAudioTracks()]);
+   const types = ["video/webm;codecs=vp9,opus","video/webm;codecs=vp8,opus","video/webm"];
+   const mime = types.find(t => MediaRecorder.isTypeSupported(t));
+   const recorder = new MediaRecorder(stream, mime ? {mimeType: mime} : {});
+   const chunks = [];
+
+   recorder.ondataavailable = e => { if(e.data && e.data.size) chunks.push(e.data); };
+   recorder.onstop = () => {
+    const blob = new Blob(chunks, {type: recorder.mimeType || "video/webm"});
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = "iraqi-motion-studio.webm";
+    a.click();
+    setTimeout(() => URL.revokeObjectURL(url), 60000);
+    stream.getTracks().forEach(tr => tr.stop());
+    exporting = false;
+    $("export").disabled = false;
+    if($("status")) $("status").textContent = "اكتمل التصدير";
+   };
+
+   recorder.start();
+   audioEl.currentTime = 0;
+   await audioEl.play();
+   if(hasVideo && videoEl) await videoEl.play().catch(()=>{});
+
+   const t0 = performance.now();
+   running = true;
+   startTime = t0;
+   if($("status")) $("status").textContent = "جاري تسجيل الفيديو...";
+
+   function step(){
+    if(!exporting) return;
+    elapsed = (performance.now() - t0) / 1000;
+    draw(Math.min(elapsed, getDuration()));
+    if(elapsed < getDuration() && !audioEl.ended){
+     requestAnimationFrame(step);
+    }else{
+     running = false;
+     audioEl.pause();
+     if(hasVideo && videoEl) videoEl.pause();
+     recorder.stop();
+    }
+   }
+   requestAnimationFrame(step);
+  }catch(err){
+   exporting = false;
+   $("export").disabled = false;
+   if($("status")) $("status").textContent = "تعذر التصدير: " + err.message;
+  }
+ };
+}
 
 applyAspectRatio();
 draw(0);
+})();
 </script>
 </body>
 </html>
