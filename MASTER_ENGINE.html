@@ -7,44 +7,46 @@
 <style>
 *{box-sizing:border-box}
 body{
- margin:0;background:#10131d;color:#fff;
- font-family:Arial,sans-serif;padding:20px
+ margin:0;background:#0c101a;color:#f4f6fc;
+ font-family:"Segoe UI",Tahoma,Arial,sans-serif;padding:18px
 }
-.app{max-width:1050px;margin:auto}
-h1{font-size:25px;color:#b9a0ff;margin:0 0 6px}
-p{color:#aeb5c8;margin:0 0 14px}
+.app{max-width:1040px;margin:auto}
+h1{font-size:24px;color:#c7b2ff;margin:0 0 4px}
+p{color:#a7b2ce;margin:0 0 14px;font-size:14px}
 .panel{
- background:#1c2232;padding:16px;
- border-radius:14px;margin:15px 0
+ background:#171e30;padding:16px;
+ border-radius:14px;margin:14px 0;border:1px solid #2a344f
 }
-label{display:block;margin:12px 0 6px}
+label{display:block;margin:11px 0 5px;font-size:14px;color:#e5eaf8}
 input,textarea,select,button{
- width:100%;padding:12px;border-radius:8px;
- border:1px solid #414b64;background:#293146;
+ width:100%;padding:11px 12px;border-radius:9px;
+ border:1px solid #394566;background:#232c44;
  color:#fff;font-size:15px
 }
-textarea{min-height:75px;resize:vertical}
-button{background:#7455db;border:0;font-weight:bold;margin-top:12px;cursor:pointer}
-button.secondary{background:#39435a}
+textarea{min-height:72px;resize:vertical}
+button{background:#7654e6;border:0;font-weight:700;margin-top:12px;cursor:pointer}
+button.secondary{background:#333e5c}
 button:disabled{opacity:.5;cursor:not-allowed}
 canvas{
  width:100%;max-height:540px;object-fit:contain;display:block;
- background:#080d1b;border-radius:12px;margin:auto
+ background:#070a13;border-radius:12px;margin:auto
 }
 .row{display:grid;grid-template-columns:1fr 1fr;gap:12px}
 .director-box{
- background:#121826;border-right:4px solid #9875ff;
- padding:12px;border-radius:8px;margin-top:14px;
- font-size:14px;line-height:1.65;color:#dce2f5
+ background:#101625;border-right:4px solid #a482ff;
+ padding:12px 14px;border-radius:9px;margin-top:14px;
+ font-size:14px;line-height:1.65;color:#dde4f8
 }
-.status{font-size:13px;color:#b9a0ff;margin-top:10px}
-@media(max-width:550px){.row{grid-template-columns:1fr}}
+.palette-bar{display:flex;gap:8px;margin-top:8px;align-items:center;flex-wrap:wrap}
+.swatch{width:22px;height:22px;border-radius:50%;border:1px solid rgba(255,255,255,.35)}
+.status{font-size:13px;color:#c7b2ff;margin-top:10px}
+@media(max-width:560px){.row{grid-template-columns:1fr}}
 </style>
 </head>
 <body>
 <div class="app">
 <h1>IRAQI MOTION STUDIO</h1>
-<p>AI Motion Graphics Director — Context, Language & Video Aware Engine</p>
+<p>مهندس إخراج وموشن جرافيك تلقائي — تحليل المشهد، الإضاءة، الحركة، والهوية</p>
 
 <div class="panel">
 <label>عنوان المشهد</label>
@@ -55,21 +57,35 @@ canvas{
 
 <div class="row">
 <div>
-<label>قرار مهندس التصميم (التكوين والمكان)</label>
+<label>إضافة مقطع فيديو</label>
+<input id="videoInput" type="file" accept="video/*">
+</div>
+<div>
+<label>إضافة صورة</label>
+<input id="imageInput" type="file" accept="image/*">
+</div>
+</div>
+
+<label>إضافة ملف صوتي (اختياري)</label>
+<input id="audioInput" type="file" accept="audio/*">
+
+<div class="row">
+<div>
+<label>التكوين والهوية البصرية</label>
 <select id="layoutMode">
-<option value="auto">تلقائي (يقرر مهندس التصميم)</option>
-<option value="lowerThird">عنوان سفلي لحماية المتحدث/المشهد</option>
-<option value="split">تقسيم متوازن (نص + عنصر مرئي)</option>
-<option value="hero">تركيز مركزي عالي التأثير</option>
-<option value="card">بطاقة تحريرية مؤطرة</option>
+<option value="auto">تلقائي (قرار مهندس التصميم)</option>
+<option value="lowerThird">شريط سفلي يحمي المتحدث</option>
+<option value="split">تقسيم متوازن (نص + عنصر)</option>
+<option value="hero">تركيز مركزي بارز</option>
+<option value="card">بطاقة تحريرية ناعمة</option>
 </select>
 </div>
 <div>
-<label>أسلوب الحركة</label>
+<label>إيقاع الحركة</label>
 <select id="motionMode">
-<option value="auto">تلقائي حسب طبيعة الفكرة</option>
+<option value="auto">تلقائي حسب المشهد والفكرة</option>
 <option value="cinematic">انسياب سينمائي هادئ</option>
-<option value="snappy">إيقاع حاسم ومباشر</option>
+<option value="snappy">إيقاع حاسم وسريع</option>
 <option value="editorial">حضور تحريري متزن</option>
 </select>
 </div>
@@ -79,65 +95,49 @@ canvas{
 <div>
 <label>أبعاد المشهد</label>
 <select id="aspectRatio">
-<option value="16:9">16:9 (أفقي - يوتيوب وعروض)</option>
-<option value="9:16">9:16 (عمودي - ريلز وتيك توك)</option>
-<option value="1:1">1:1 (مربع - منشورات)</option>
+<option value="16:9">16:9 (أفقي)</option>
+<option value="9:16">9:16 (عمودي)</option>
+<option value="1:1">1:1 (مربع)</option>
 </select>
 </div>
 <div>
-<label>نمط الخلفية البصرية</label>
-<select id="bgStyle">
-<option value="grid">شبكة هندسية وهالة ضوئية</option>
-<option value="waves">موجات منحنية وطبقات ضوئية</option>
-<option value="particles">جسيمات متحركة وأشكال هندسية</option>
-</select>
-</div>
-</div>
-
-<div class="row">
-<div>
-<label>لون التصميم</label>
-<input id="accent" type="color" value="#9875ff">
-</div>
-<div>
-<label>مدة المشهد بالثواني</label>
+<label>مدة المشهد (بالثواني)</label>
 <input id="duration" type="number" min="5" max="120" value="15">
 </div>
 </div>
 
 <div class="row">
 <div>
-<label>إضافة مقطع فيديو للمشهد</label>
-<input id="videoInput" type="file" accept="video/*">
+<label>لون التمييز (مستخلص تلقائياً وقابل للتعديل)</label>
+<input id="accent" type="color" value="#9875ff">
 </div>
 <div>
-<label>إضافة صورة</label>
-<input id="imageInput" type="file" accept="image/*">
+<label>نمط الخلفية (عند عدم وجود فيديو)</label>
+<select id="bgStyle">
+<option value="grid">شبكة هندسية وهالة</option>
+<option value="waves">موجات منحنية</option>
+<option value="particles">جسيمات متحركة</option>
+</select>
 </div>
 </div>
 
-<label>إضافة ملف صوتي خارجي (اختياري)</label>
-<input id="audioInput" type="file" accept="audio/*">
-
-<div class="director-box" id="directorBrief">جاري تحليل الفكرة والمشهد...</div>
+<div class="director-box" id="directorBrief">جاري قراءة المشهد وتحليل الفكرة...</div>
+<div class="palette-bar" id="paletteBar"></div>
 </div>
 
 <div class="panel">
 <canvas id="stage" width="1280" height="720"></canvas>
-
 <div class="row">
 <button id="play" type="button">▶ تشغيل المعاينة</button>
 <button id="pause" type="button" class="secondary">Ⅱ إيقاف</button>
 </div>
-
-<button id="export" type="button">تسجيل وتصدير الفيديو WebM</button>
-<div class="status" id="status">جاهز للمعاينة</div>
+<button id="export" type="button">تصدير الفيديو WebM</button>
+<div class="status" id="status">جاهز</div>
 </div>
 </div>
 
 <video id="video" playsinline preload="auto" muted style="display:none"></video>
 <audio id="audio" preload="auto"></audio>
-
 <script>
 (function(){
 "use strict";
@@ -148,6 +148,12 @@ const ctx = canvas ? canvas.getContext("2d") : null;
 const videoEl = $("video");
 const audioEl = $("audio");
 
+const probeCanvas = document.createElement("canvas");
+probeCanvas.width = 48;
+probeCanvas.height = 48;
+const probeCtx = probeCanvas.getContext("2d", { willReadFrequently: true });
+
+let prevFrameLuma = null;
 let photo = null;
 let hasVideo = false;
 let running = false;
@@ -159,14 +165,67 @@ let audioURL = null;
 let videoURL = null;
 let W = canvas ? canvas.width : 1280;
 let H = canvas ? canvas.height : 720;
+let sceneAccent = "#9875ff";
+let lastAccentSync = 0;
 
-const particles = Array.from({length: 26}, (_, i) => ({
- rx: ((i * 73) % 100) / 100,
- ry: ((i * 41) % 100) / 100,
- r: 2.5 + (i % 4) * 1.4,
- speed: 0.25 + (i % 5) * 0.08,
- phase: i * 0.7
-}));
+function rgbToHex(r, g, b){
+ const clamp = v => Math.max(0, Math.min(255, Math.round(v))).toString(16).padStart(2, "0");
+ return "#" + clamp(r) + clamp(g) + clamp(b);
+}
+
+function liftAccentColor(r, g, b){
+ const max = Math.max(r, g, b);
+ const min = Math.min(r, g, b);
+ if(max - min < 34) return "#9875ff";
+ const scale = max < 145 ? 165 / Math.max(1, max) : max > 235 ? 220 / max : 1.12;
+ return rgbToHex(r * scale, g * scale, b * scale);
+}
+
+function sampleVisualFromSource(src, trackMotion){
+ if(!probeCtx || !src){
+  return { accent: sceneAccent, topBright: 120, midBright: 120, bottomBright: 120, motionEnergy: 0 };
+ }
+ try{
+  probeCtx.clearRect(0, 0, 48, 48);
+  probeCtx.drawImage(src, 0, 0, 48, 48);
+  const data = probeCtx.getImageData(0, 0, 48, 48).data;
+
+  let rSum = 0, gSum = 0, bSum = 0, total = 0;
+  let topL = 0, topC = 0, midL = 0, midC = 0, botL = 0, botC = 0;
+  let diffSum = 0;
+  const currLuma = trackMotion ? new Float32Array(48 * 48) : null;
+
+  for(let y = 0; y < 48; y++){
+   for(let x = 0; x < 48; x++){
+    const idx = y * 48 + x;
+    const i = idx * 4;
+    const r = data[i], g = data[i + 1], b = data[i + 2];
+    const luma = 0.299 * r + 0.587 * g + 0.114 * b;
+    rSum += r; gSum += g; bSum += b; total++;
+    if(currLuma) currLuma[idx] = luma;
+    if(prevFrameLuma && trackMotion){
+     diffSum += Math.abs(luma - prevFrameLuma[idx]);
+    }
+    if(y < 16){ topL += luma; topC++; }
+    else if(y < 32){ midL += luma; midC++; }
+    else{ botL += luma; botC++; }
+   }
+  }
+
+  if(trackMotion && currLuma) prevFrameLuma = currLuma;
+
+  const motionEnergy = trackMotion && total ? Math.min(100, Math.round((diffSum / total) * 2.4)) : 0;
+  return {
+   accent: liftAccentColor(rSum / Math.max(1, total), gSum / Math.max(1, total), bSum / Math.max(1, total)),
+   topBright: Math.round(topL / Math.max(1, topC)),
+   midBright: Math.round(midL / Math.max(1, midC)),
+   bottomBright: Math.round(botL / Math.max(1, botC)),
+   motionEnergy
+  };
+ }catch(_){
+  return { accent: sceneAccent, topBright: 120, midBright: 120, bottomBright: 120, motionEnergy: 0 };
+ }
+}
 
 function detectDir(text){
  const ar = (text.match(/[\u0600-\u06FF]/g) || []).length;
@@ -176,27 +235,26 @@ function detectDir(text){
  return "rtl";
 }
 
-function analyzeIdea(title, subtitle, vidActive, imgActive, isPortrait){
+function engineerPlan(title, subtitle, vidReady, imgReady, isPortrait, vis){
  const combined = (title + " " + subtitle).trim();
  const words = combined.split(/\s+/).filter(Boolean).length;
  const dir = detectDir(combined);
 
- const isAlert = /(عاجل|تنبيه|خطير|مهم|سر|تحذير|احذر|لا تفوت|الآن|urgent|warning|alert|breaking|important|stop)/i.test(combined);
- const isQuestion = /[؟?]|(لماذا|كيف|متى|أين|هل|what|why|how|when|where|who)/i.test(combined);
- const isData = /(\d+%|\d+\s*(مليون|ألف|سنة|يوم|خطوة|سبب|million|thousand|years|days|steps))/i.test(combined);
+ const alertRe = /(عاجل|تنبيه|خطير|مهم|سر|تحذير|احذر|لا تفوت|الآن|urgent|warning|alert|breaking|important)/i;
+ const questRe = /[؟?]|(لماذا|كيف|متى|أين|هل|what|why|how|when|where)/i;
+ const dataRe = /(\d+%|\d+\s*(مليون|ألف|سنة|يوم|خطوة|million|thousand|years|days))/i;
 
- let importance = "medium";
  let intent = "editorial";
- if(isAlert || (title.trim().length > 0 && title.trim().split(/\s+/).length <= 3)){
-  importance = "high";
-  intent = isAlert ? "alert" : "hook";
- }else if(isQuestion){
-  intent = "question";
- }else if(isData){
-  importance = "high";
+ let highWeight = false;
+ if(alertRe.test(combined) || (title.trim().length > 0 && title.trim().split(/\s+/).length <= 3)){
+  intent = alertRe.test(combined) ? "alert" : "hook";
+  highWeight = true;
+ }else if(dataRe.test(combined)){
   intent = "data";
+  highWeight = true;
+ }else if(questRe.test(combined)){
+  intent = "question";
  }else if(words > 24){
-  importance = "detailed";
   intent = "narrative";
  }
 
@@ -205,49 +263,52 @@ function analyzeIdea(title, subtitle, vidActive, imgActive, isPortrait){
 
  const layout = layoutSel !== "auto"
   ? layoutSel
-  : vidActive
+  : vidReady
     ? "lowerThird"
-    : (imgActive && !isPortrait)
+    : (imgReady && !isPortrait)
       ? "split"
-      : (importance === "high" && words <= 12)
+      : (highWeight && words <= 12)
         ? "hero"
         : "card";
 
  const motion = motionSel !== "auto"
   ? motionSel
-  : (intent === "alert" || intent === "hook" || intent === "data")
+  : (vis.motionEnergy > 28 || intent === "alert" || intent === "hook" || intent === "data")
     ? "snappy"
     : (intent === "question" || intent === "narrative")
       ? "cinematic"
       : "editorial";
 
- const titleScale = importance === "high" ? 1.15 : importance === "detailed" ? 0.90 : 1.0;
- const subScale = words > 20 ? 0.85 : importance === "high" ? 1.04 : 1.0;
+ const titleScale = highWeight ? 1.14 : intent === "narrative" ? 0.90 : 1.0;
+ const subScale = words > 22 ? 0.85 : highWeight ? 1.03 : 1.0;
 
- const langText = dir === "ltr" ? "نص أجنبي (LTR)" : "نص عربي (RTL)";
- const intentText = {
-  alert: "تنبيه/تركيز حاسم",
+ const intentMap = {
+  alert: "تركيز تنبيهي حاسم",
   hook: "افتتاحية خاطفة",
-  question: "تساؤل تفاعلي",
-  data: "إحصاء/معلومة بارزة",
-  narrative: "سرد تفصيلي",
-  editorial: "طرح تحريري متزن"
- }[intent];
-
- const layoutText = {
-  lowerThird: "عنوان سفلي يحمي منطقة المتحدث/الفيديو",
-  split: "تقسيم متوازن بين النص والصورة",
-  hero: "تركيز مركزي عالي التأثير",
-  card: "بطاقة تحريرية مؤطرة"
- }[layout];
-
- const motionText = {
-  snappy: "حركة حاسمة وسريعة",
+  data: "إبراز معلوماتي/رقمي",
+  question: "طرح تساؤلي تأملي",
+  narrative: "سرد تفصيلي متدرج",
+  editorial: "إخراج تحريري متزن"
+ };
+ const layoutMap = {
+  lowerThird: "شريط سفلي يحمي وجه المتحدث وإطار المشهد",
+  split: "تقسيم متوازن يبعد النص عن تزاحم الصورة",
+  hero: "تركيز مركزي عالي الحضور",
+  card: "بطاقة تحريرية ناعمة ذات عمق بصري"
+ };
+ const motionMap = {
+  snappy: "حركة حاسمة سريعة",
   cinematic: "انسياب سينمائي هادئ",
   editorial: "حضور تحريري متزن"
- }[motion];
+ };
 
- const brief = `مهندس التصميم: ${langText} • ${intentText} • القرار: ${layoutText} مع ${motionText}.`;
+ const sceneNote = vidReady
+  ? (vis.bottomBright > 165
+      ? `إضاءة الأسفل عالية (${vis.bottomBright}) فزاد المهندس كثافة الحماية`
+      : `إضاءة الأسفل مناسبة (${vis.bottomBright}) وحركة المشهد ${vis.motionEnergy}%`)
+  : "إخراج لوني وفراغي متوازن مع طبيعة النص";
+
+ const brief = `قرار المهندس: ${dir === "ltr" ? "LTR" : "RTL"} • ${intentMap[intent]} • ${layoutMap[layout]} • ${motionMap[motion]} (${sceneNote}).`;
  return { dir, layout, motion, titleScale, subScale, brief };
 }
 
@@ -257,13 +318,12 @@ function applyAspectRatio(){
  if(r === "9:16"){ canvas.width = 720; canvas.height = 1280; }
  else if(r === "1:1"){ canvas.width = 1080; canvas.height = 1080; }
  else{ canvas.width = 1280; canvas.height = 720; }
- W = canvas.width;
- H = canvas.height;
+ W = canvas.width; H = canvas.height;
 }
 
 function getDuration(){
- const val = $("duration") ? Number($("duration").value) : 15;
- return Math.max(5, Math.min(120, val || 15));
+ const v = $("duration") ? Number($("duration").value) : 15;
+ return Math.max(5, Math.min(120, v || 15));
 }
 
 function ease(t, mode){
@@ -273,236 +333,292 @@ function ease(t, mode){
  return 1 - Math.pow(1 - t, 3);
 }
 
-function drawText(text, x, y, size, color, dir, align, weight){
+function roundRectPath(x, y, w, h, rad){
+ const r = Math.min(rad, w / 2, h / 2);
+ ctx.beginPath();
+ ctx.moveTo(x + r, y);
+ ctx.arcTo(x + w, y, x + w, y + h, r);
+ ctx.arcTo(x + w, y + h, x, y + h, r);
+ ctx.arcTo(x, y + h, x, y, r);
+ ctx.arcTo(x, y, x + w, y, r);
+ ctx.closePath();
+}
+
+function wrapTextLines(text, maxW, maxLines){
+ const paragraphs = String(text || "").split(/\r?\n/);
+ const out = [];
+ for(const para of paragraphs){
+  const words = para.trim().split(/\s+/).filter(Boolean);
+  if(!words.length){
+   if(out.length && out.length < maxLines) out.push("");
+   continue;
+  }
+  let line = "";
+  for(const w of words){
+   const test = line ? line + " " + w : w;
+   if(ctx.measureText(test).width > maxW && line){
+    out.push(line);
+    line = w;
+    if(out.length >= maxLines) return out;
+   }else{
+    line = test;
+   }
+  }
+  if(line && out.length < maxLines) out.push(line);
+  if(out.length >= maxLines) break;
+ }
+ return out.slice(0, maxLines);
+}
+
+function drawText(text, x, y, size, color, dir, align, weight, baseline){
  if(!ctx || !text) return;
  ctx.save();
- ctx.font = (weight || "bold") + " " + size + "px Arial";
+ ctx.font = (weight || "700") + " " + size + 'px "Segoe UI",Tahoma,Arial,sans-serif';
  ctx.textAlign = align || "center";
+ ctx.textBaseline = baseline || "alphabetic";
  ctx.direction = dir || "rtl";
  ctx.fillStyle = color || "#fff";
  ctx.fillText(text, x, y);
  ctx.restore();
 }
 
-function drawVideo(t, color){
- if(!ctx || !hasVideo || !videoEl || videoEl.readyState < 2) return;
- const vw = videoEl.videoWidth || W;
- const vh = videoEl.videoHeight || H;
- const scale = Math.max(W / vw, H / vh);
- const sw = vw * scale;
- const sh = vh * scale;
- ctx.save();
- ctx.drawImage(videoEl, (W - sw) / 2, (H - sh) / 2, sw, sh);
- const grad = ctx.createLinearGradient(0, H * 0.35, 0, H);
- grad.addColorStop(0, "rgba(8,13,27,0.12)");
- grad.addColorStop(0.65, "rgba(8,13,27,0.45)");
- grad.addColorStop(1, "rgba(8,13,27,0.82)");
- ctx.fillStyle = grad;
- ctx.fillRect(0, 0, W, H);
- ctx.strokeStyle = color + "45";
- ctx.lineWidth = 2;
- ctx.strokeRect(W * 0.03, H * 0.03, W * 0.94, H * 0.94);
- ctx.restore();
+function updatePaletteUI(accent, vis){
+ if(!$("paletteBar")) return;
+ $("paletteBar").innerHTML =
+  `<span class="swatch" style="background:${accent}"></span>` +
+  `<span class="swatch" style="background:#0e1526"></span>` +
+  `<span class="swatch" style="background:#f5f7ff"></span>` +
+  `<span style="font-size:12px;color:#aeb8d4">إضاءة أسفل المشهد: ${vis.bottomBright}/255 • نشاط الحركة: ${vis.motionEnergy}%</span>`;
 }
 
-function drawBg(t, color){
+function drawSceneBase(t, accent, vis){
  if(!ctx) return;
- if(hasVideo){ drawVideo(t, color); return; }
+ const vidReady = hasVideo && videoEl && videoEl.readyState >= 2;
+ if(vidReady){
+  const vw = videoEl.videoWidth || W;
+  const vh = videoEl.videoHeight || H;
+  const sc = Math.max(W / vw, H / vh);
+  const sw = vw * sc, sh = vh * sc;
+  ctx.save();
+  ctx.drawImage(videoEl, (W - sw) / 2, (H - sh) / 2, sw, sh);
+  const botAlpha = vis.bottomBright > 165 ? 0.92 : 0.80;
+  const grad = ctx.createLinearGradient(0, H * 0.45, 0, H);
+  grad.addColorStop(0, "rgba(7,11,22,0.04)");
+  grad.addColorStop(0.64, "rgba(7,11,22,0.44)");
+  grad.addColorStop(1, `rgba(7,11,22,${botAlpha})`);
+  ctx.fillStyle = grad;
+  ctx.fillRect(0, 0, W, H);
+  ctx.restore();
+  return;
+ }
 
  const style = $("bgStyle") ? $("bgStyle").value : "grid";
- const g = ctx.createLinearGradient(0, 0, W, H);
- g.addColorStop(0, "#10182c");
- g.addColorStop(1, "#080b16");
- ctx.fillStyle = g;
+ const bgGrad = ctx.createLinearGradient(0, 0, W, H);
+ bgGrad.addColorStop(0, "#11192e");
+ bgGrad.addColorStop(1, "#070b14");
+ ctx.fillStyle = bgGrad;
  ctx.fillRect(0, 0, W, H);
 
- const pulse = 1 + Math.sin(t * 1.5) * 0.06;
- const glow = ctx.createRadialGradient(W * 0.5, H * 0.45, 20, W * 0.5, H * 0.45, Math.max(W, H) * 0.42 * pulse);
- glow.addColorStop(0, color + "30");
+ const glow = ctx.createRadialGradient(W * 0.5, H * 0.45, 20, W * 0.5, H * 0.45, Math.max(W, H) * 0.45);
+ glow.addColorStop(0, accent + "33");
  glow.addColorStop(1, "transparent");
  ctx.fillStyle = glow;
  ctx.fillRect(0, 0, W, H);
 
  if(style === "grid"){
   ctx.save();
-  ctx.globalAlpha = 0.12;
-  ctx.strokeStyle = color;
-  ctx.lineWidth = 1;
-  const step = Math.max(48, Math.round(Math.min(W, H) / 11));
+  ctx.globalAlpha = 0.11;
+  ctx.strokeStyle = accent;
+  const step = Math.max(50, Math.round(Math.min(W, H) / 11));
   for(let x = 0; x <= W; x += step){ ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, H); ctx.stroke(); }
   for(let y = 0; y <= H; y += step){ ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(W, y); ctx.stroke(); }
   ctx.restore();
  }else if(style === "waves"){
   ctx.save();
-  for(let layer = 0; layer < 3; layer++){
+  for(let i = 0; i < 3; i++){
    ctx.beginPath();
-   const baseY = H * (0.32 + layer * 0.18);
-   for(let x = 0; x <= W + 20; x += 24){
-    const y = baseY + Math.sin(x * 0.008 + t * (1.2 + layer * 0.3) + layer) * 28;
+   const by = H * (0.34 + i * 0.17);
+   for(let x = 0; x <= W + 24; x += 24){
+    const y = by + Math.sin(x * 0.008 + t * (1.1 + i * 0.25) + i) * 26;
     if(x === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
    }
    ctx.lineTo(W, H); ctx.lineTo(0, H); ctx.closePath();
-   ctx.fillStyle = color + (layer === 0 ? "18" : layer === 1 ? "12" : "0c");
+   ctx.fillStyle = accent + (i === 0 ? "1c" : "10");
    ctx.fill();
   }
   ctx.restore();
  }else{
   ctx.save();
-  particles.forEach((p, idx) => {
-   const px = ((p.rx * W) + Math.sin(t * p.speed + p.phase) * 26 + W) % W;
-   const py = ((p.ry * H) + Math.cos(t * p.speed * 0.9 + p.phase) * 26 + H) % H;
-   ctx.globalAlpha = 0.22 + 0.14 * Math.sin(t * 2 + idx);
-   ctx.fillStyle = idx % 3 === 0 ? "#ffffff" : color;
+  for(let i = 0; i < 22; i++){
+   const px = (((i * 73) % 100) / 100 * W + Math.sin(t * 0.5 + i) * 24 + W) % W;
+   const py = (((i * 41) % 100) / 100 * H + Math.cos(t * 0.45 + i) * 24 + H) % H;
+   ctx.globalAlpha = 0.25;
+   ctx.fillStyle = i % 3 === 0 ? "#fff" : accent;
    ctx.beginPath();
-   ctx.arc(px, py, p.r * (Math.min(W, H) / 720), 0, Math.PI * 2);
+   ctx.arc(px, py, 3.2, 0, Math.PI * 2);
    ctx.fill();
-  });
-  ctx.strokeStyle = color + "28";
-  ctx.lineWidth = 2;
-  ctx.strokeRect(W * 0.05, H * 0.06, W * 0.90, H * 0.88);
+  }
   ctx.restore();
  }
 }
 
 function drawPhoto(t, layout, isPortrait, dir, motion){
  if(!ctx || !photo) return;
- const durF = motion === "snappy" ? 0.65 : motion === "cinematic" ? 1.2 : 0.95;
- const prog = ease(t / durF, motion);
- const scale = 1.04 - prog * 0.04;
- let boxW, boxH, cx, cy;
+ const prog = ease(t / 0.9, motion);
+ const scale = 1.03 - prog * 0.03;
+ let bw = W * 0.34, bh = H * 0.42, cx = dir === "ltr" ? W * 0.75 : W * 0.25, cy = H * 0.45;
+ if(layout === "lowerThird"){ bw = W * 0.16; bh = H * 0.13; cx = dir === "ltr" ? W * 0.15 : W * 0.85; cy = H * 0.77; }
+ else if(isPortrait){ bw = W * 0.62; bh = H * 0.24; cx = W * 0.5; cy = H * 0.63; }
 
- if(layout === "lowerThird"){
-  boxW = W * 0.18; boxH = H * 0.14;
-  cx = dir === "ltr" ? W * 0.15 : W * 0.85; cy = H * 0.79;
- }else if(layout === "split" && !isPortrait){
-  boxW = W * 0.36; boxH = H * 0.48;
-  cx = dir === "ltr" ? W * 0.74 : W * 0.26; cy = H * 0.48;
- }else if(isPortrait){
-  boxW = W * 0.60; boxH = H * 0.24;
-  cx = W * 0.5; cy = H * 0.64;
- }else{
-  boxW = W * 0.34; boxH = H * 0.42;
-  cx = dir === "ltr" ? W * 0.75 : W * 0.25; cy = H * 0.46;
- }
-
- const fit = Math.min(boxW / photo.width, boxH / photo.height);
- const sw = photo.width * fit * scale;
- const sh = photo.height * fit * scale;
+ const fit = Math.min(bw / photo.width, bh / photo.height);
+ const sw = photo.width * fit * scale, sh = photo.height * fit * scale;
  ctx.save();
- ctx.globalAlpha = ease(t / (durF * 0.75), motion);
- ctx.shadowColor = "#000";
- ctx.shadowBlur = 30;
+ ctx.globalAlpha = ease(t / 0.7, motion);
+ roundRectPath(cx - sw / 2, cy - sh / 2, sw, sh, 16);
+ ctx.clip();
  ctx.drawImage(photo, cx - sw / 2, cy - sh / 2, sw, sh);
  ctx.restore();
 }
-
-function draw(t){
+ function draw(t){
  if(!ctx) return;
  try{
-  const color = $("accent") ? $("accent").value : "#9875ff";
+  const vidReady = hasVideo && videoEl && videoEl.readyState >= 2;
+  let vis = { accent: sceneAccent, topBright: 120, midBright: 120, bottomBright: 120, motionEnergy: 0 };
+  if(vidReady){
+   vis = sampleVisualFromSource(videoEl, running || exporting);
+  }else if(photo){
+   vis = sampleVisualFromSource(photo, false);
+  }
+
+  if($("accent") && performance.now() - lastAccentSync > 1200 && (vidReady || photo)){
+   sceneAccent = vis.accent;
+   if(!$("accent").dataset.manual){
+    $("accent").value = sceneAccent;
+   }
+   lastAccentSync = performance.now();
+  }
+
+  const accent = $("accent") ? $("accent").value : sceneAccent;
+  updatePaletteUI(accent, vis);
+
   const title = $("title") ? $("title").value : "";
   const subtitle = $("subtitle") ? $("subtitle").value : "";
   const isPortrait = H > W;
-  const plan = analyzeIdea(title, subtitle, hasVideo, !!photo, isPortrait);
-
+  const plan = engineerPlan(title, subtitle, vidReady, !!photo, isPortrait, vis);
   if($("directorBrief")) $("directorBrief").textContent = plan.brief;
 
   const dur = getDuration();
-  const introDur = plan.motion === "snappy" ? 0.55 : plan.motion === "cinematic" ? 1.15 : 0.85;
+  const introDur = plan.motion === "snappy" ? 0.5 : plan.motion === "cinematic" ? 1.1 : 0.8;
   const intro = ease(t / introDur, plan.motion);
   const exit = 1 - ease((t - dur + 0.65) / 0.65, plan.motion);
   const alpha = Math.max(0, Math.min(1, intro * exit));
-  const move = (1 - intro) * (plan.motion === "snappy" ? 28 : 48);
+  const shift = (1 - intro) * (plan.motion === "snappy" ? 24 : 42);
 
   ctx.clearRect(0, 0, W, H);
-  drawBg(t, color);
+  drawSceneBase(t, accent, vis);
 
   if(plan.layout === "lowerThird"){
-   const barW = W * 0.88;
-   const barH = Math.max(132, H * 0.19);
-   const barX = W * 0.06;
-   const barY = H * 0.71 + move * 0.35;
+   const bw = W * 0.86;
+   const bh = Math.max(126, H * 0.18);
+   const bx = W * 0.07;
+   const by = H * 0.66 + shift * 0.35;
 
    ctx.save();
    ctx.globalAlpha = alpha;
-   ctx.fillStyle = "rgba(11,16,32,0.88)";
-   ctx.fillRect(barX, barY, barW, barH);
-   ctx.fillStyle = color;
-   ctx.fillRect(plan.dir === "ltr" ? barX : barX + barW - 8, barY, 8, barH);
-   drawPhoto(t, plan.layout, isPortrait, plan.dir, plan.motion);
+   roundRectPath(bx, by, bw, bh, 16);
+   ctx.fillStyle = "rgba(12,17,32,0.89)";
+   ctx.fill();
+   ctx.lineWidth = 1.5;
+   ctx.strokeStyle = accent + "88";
+   ctx.stroke();
 
+   ctx.fillStyle = accent;
+   roundRectPath(plan.dir === "ltr" ? bx + 8 : bx + bw - 14, by + 18, 6, bh - 36, 4);
+   ctx.fill();
+
+   drawPhoto(t, plan.layout, isPortrait, plan.dir, plan.motion);
    const tx = photo ? (plan.dir === "ltr" ? W * 0.54 : W * 0.44) : W * 0.5;
-   drawText(title, tx, barY + barH * 0.38, Math.round((isPortrait ? 30 : 35) * plan.titleScale), "#ffffff", plan.dir, "center", "bold");
-   drawText(subtitle, tx, barY + barH * 0.66, Math.round((isPortrait ? 19 : 22) * plan.subScale), "#d5dcf0", plan.dir, "center", "normal");
+   const subMaxW = photo ? W * 0.62 : W * 0.76;
+   const tFont = Math.round((isPortrait ? 28 : 34) * plan.titleScale);
+   const sFont = Math.round((isPortrait ? 18 : 21) * plan.subScale);
+
+   drawText(title, tx, by + bh * 0.34, tFont, "#ffffff", plan.dir, "center", "700", "middle");
+
+   ctx.font = `400 ${sFont}px "Segoe UI",Tahoma,Arial,sans-serif`;
+   ctx.textAlign = "center";
+   ctx.textBaseline = "middle";
+   ctx.direction = plan.dir;
+   ctx.fillStyle = "#d8dff4";
+   const ltLines = wrapTextLines(subtitle, subMaxW, 2);
+   ltLines.forEach((ln, idx) => {
+    ctx.fillText(ln, tx, by + bh * 0.65 + idx * (sFont * 1.25));
+   });
    ctx.restore();
   }else{
    if(plan.layout === "card"){
     ctx.save();
-    ctx.globalAlpha = alpha * 0.72;
-    ctx.fillStyle = "rgba(20,28,47,0.85)";
-    ctx.strokeStyle = color + "88";
+    ctx.globalAlpha = alpha * 0.78;
+    roundRectPath(W * 0.06, H * 0.12, W * 0.88, H * 0.74, 22);
+    ctx.fillStyle = "rgba(18,24,42,0.86)";
+    ctx.fill();
+    ctx.strokeStyle = accent + "77";
     ctx.lineWidth = 2;
-    ctx.fillRect(W * 0.06, H * 0.12, W * 0.88, H * 0.76);
-    ctx.strokeRect(W * 0.06, H * 0.12, W * 0.88, H * 0.76);
+    ctx.stroke();
     ctx.restore();
    }
 
    ctx.save();
    ctx.globalAlpha = alpha;
-   ctx.fillStyle = color;
-   ctx.fillRect(W * 0.08, H * 0.24, Math.min(W * 0.84, t * (W * 0.58)), 5);
+   ctx.fillStyle = accent;
+   roundRectPath(W * 0.08, H * 0.23, Math.min(W * 0.84, Math.max(60, t * W * 0.55)), 5, 3);
+   ctx.fill();
    ctx.restore();
 
    drawPhoto(t, plan.layout, isPortrait, plan.dir, plan.motion);
 
-   let textX = W * 0.5, textY = H * 0.42;
-   let tSize = (isPortrait ? 48 : 64) * plan.titleScale;
-   let sSize = (isPortrait ? 25 : 29) * plan.subScale;
-   let maxW = W * 0.80;
+   let tx = W * 0.5, ty = H * 0.40;
+   let tSize = (isPortrait ? 46 : 62) * plan.titleScale;
+   let sSize = (isPortrait ? 24 : 28) * plan.subScale;
+   let maxW = W * 0.78;
 
    if(plan.layout === "split" && photo && !isPortrait){
-    textX = plan.dir === "ltr" ? W * 0.28 : W * 0.72;
-    textY = H * 0.44;
-    tSize = 46 * plan.titleScale;
+    tx = plan.dir === "ltr" ? W * 0.28 : W * 0.72;
+    ty = H * 0.42;
+    tSize = 44 * plan.titleScale;
     maxW = W * 0.42;
    }else if(photo && isPortrait){
-    textY = H * 0.33;
-    maxW = W * 0.82;
+    ty = H * 0.32;
+    maxW = W * 0.80;
    }
 
    ctx.save();
    ctx.globalAlpha = alpha;
-   ctx.translate(0, move);
-   drawText(title, textX, textY, Math.round(tSize), "#ffffff", plan.dir, "center", "bold");
+   ctx.translate(0, shift);
+   drawText(title, tx, ty, Math.round(tSize), "#ffffff", plan.dir, "center", "700", "alphabetic");
 
-   ctx.font = Math.round(sSize) + "px Arial";
+   ctx.font = `400 ${Math.round(sSize)}px "Segoe UI",Tahoma,Arial,sans-serif`;
    ctx.textAlign = "center";
    ctx.textBaseline = "top";
    ctx.direction = plan.dir;
-   ctx.fillStyle = "#d0d7ec";
+   ctx.fillStyle = "#d5dcf0";
 
-   const words = subtitle.split(/\s+/).filter(Boolean);
-   let line = "", lines = [];
-   for(const w of words){
-    const test = line ? line + " " + w : w;
-    if(ctx.measureText(test).width > maxW && line){ lines.push(line); line = w; }
-    else line = test;
-   }
-   if(line) lines.push(line);
-   lines.slice(0, 4).forEach((ln, idx) => {
-    ctx.fillText(ln, textX, textY + tSize * 0.75 + idx * (sSize * 1.35));
+   const lines = wrapTextLines(subtitle, maxW, 4);
+   lines.forEach((ln, idx) => {
+    ctx.fillText(ln, tx, ty + tSize * 0.72 + idx * (sSize * 1.35));
    });
    ctx.restore();
   }
 
   const prog = Math.min(1, t / dur);
-  ctx.fillStyle = "#ffffff30";
-  ctx.fillRect(W * 0.08, H * 0.91, W * 0.84, 5);
-  ctx.fillStyle = color;
-  ctx.fillRect(W * 0.08, H * 0.91, W * 0.84 * prog, 5);
-  drawText("IRAQI MOTION STUDIO", W * 0.5, H * 0.96, 17, "#8993ad", "ltr", "center", "normal");
+  ctx.fillStyle = "rgba(255,255,255,0.22)";
+  roundRectPath(W * 0.08, H * 0.91, W * 0.84, 5, 3);
+  ctx.fill();
+  ctx.fillStyle = accent;
+  roundRectPath(W * 0.08, H * 0.91, W * 0.84 * prog, 5, 3);
+  ctx.fill();
+  drawText("IRAQI MOTION STUDIO", W * 0.5, H * 0.96, 16, "#939dbd", "ltr", "center", "400", "alphabetic");
  }catch(err){
-  if($("status")) $("status").textContent = "تنبيه رسم: " + err.message;
+  if($("status")) $("status").textContent = "تنبيه: " + err.message;
  }
 }
 
@@ -520,8 +636,8 @@ function frame(){
   return;
  }
  if(hasVideo && videoEl && videoEl.readyState >= 2){
-  const targetT = elapsed % Math.max(0.1, videoEl.duration || dur);
-  if(Math.abs(videoEl.currentTime - targetT) > 0.2) videoEl.currentTime = targetT;
+  const target = elapsed % Math.max(0.1, videoEl.duration || dur);
+  if(Math.abs(videoEl.currentTime - target) > 0.22) videoEl.currentTime = target;
  }
  draw(elapsed);
  raf = requestAnimationFrame(frame);
@@ -533,10 +649,7 @@ function play(){
  if(elapsed >= dur) elapsed = 0;
  running = true;
  startTime = performance.now() - elapsed * 1000;
- if(audioEl && audioEl.src){
-  audioEl.currentTime = elapsed;
-  audioEl.play().catch(()=>{});
- }
+ if(audioEl && audioEl.src){ audioEl.currentTime = elapsed; audioEl.play().catch(()=>{}); }
  if(hasVideo && videoEl){
   videoEl.currentTime = elapsed % Math.max(0.1, videoEl.duration || dur);
   videoEl.play().catch(()=>{});
@@ -556,21 +669,29 @@ function pause(){
 if($("aspectRatio")){
  $("aspectRatio").addEventListener("change", () => { applyAspectRatio(); draw(elapsed); });
 }
+if($("accent")){
+ $("accent").addEventListener("input", () => { $("accent").dataset.manual = "1"; draw(elapsed); });
+}
 if($("videoInput")){
  $("videoInput").addEventListener("change", e => {
   const f = e.target.files && e.target.files[0];
   if(!f) return;
   pause();
+  prevFrameLuma = null;
   if(videoURL) URL.revokeObjectURL(videoURL);
   videoURL = URL.createObjectURL(f);
   hasVideo = true;
   elapsed = 0;
+  if($("accent")) delete $("accent").dataset.manual;
   videoEl.src = videoURL;
   videoEl.load();
   videoEl.onloadeddata = () => {
    videoEl.currentTime = 0;
+   const info = sampleVisualFromSource(videoEl, true);
+   sceneAccent = info.accent;
+   if($("accent")) $("accent").value = sceneAccent;
    draw(0);
-   if($("status")) $("status").textContent = "تم تحميل الفيديو وفعّل مهندس التصميم حماية المشهد";
+   if($("status")) $("status").textContent = "حلّل المهندس الفيديو واختار الهوية والمكان";
   };
   draw(0);
  });
@@ -579,12 +700,17 @@ if($("imageInput")){
  $("imageInput").addEventListener("change", e => {
   const f = e.target.files && e.target.files[0];
   if(!f) return;
+  prevFrameLuma = null;
   const u = URL.createObjectURL(f);
   const img = new Image();
   img.onload = () => {
    if(photo && photo._url) URL.revokeObjectURL(photo._url);
    photo = img;
    photo._url = u;
+   if($("accent") && !$("accent").dataset.manual){
+    sceneAccent = sampleVisualFromSource(img, false).accent;
+    $("accent").value = sceneAccent;
+   }
    draw(elapsed);
   };
   img.onerror = () => URL.revokeObjectURL(u);
@@ -606,7 +732,7 @@ if($("audioInput")){
  });
 }
 
-["title","subtitle","layoutMode","motionMode","bgStyle","accent","duration"].forEach(id => {
+["title","subtitle","layoutMode","motionMode","bgStyle","duration"].forEach(id => {
  const el = $(id);
  if(el){
   el.addEventListener("input", () => draw(elapsed));
@@ -616,15 +742,12 @@ if($("audioInput")){
 
 if($("play")) $("play").onclick = play;
 if($("pause")) $("pause").onclick = pause;
- if($("export")){
+
+if($("export")){
  $("export").onclick = async () => {
   if(exporting) return;
   if(!window.MediaRecorder || !canvas || !canvas.captureStream){
    if($("status")) $("status").textContent = "المتصفح لا يدعم تسجيل الفيديو";
-   return;
-  }
-  if(!audioEl || !audioEl.src){
-   if($("status")) $("status").textContent = "أضف ملفاً صوتياً أولاً";
    return;
   }
   try{
@@ -632,14 +755,20 @@ if($("pause")) $("pause").onclick = pause;
    exporting = true;
    $("export").disabled = true;
    elapsed = 0;
+   prevFrameLuma = null;
    if(hasVideo && videoEl) videoEl.currentTime = 0;
    draw(0);
 
    const vStream = canvas.captureStream(30);
-   const aStream = audioEl.captureStream ? audioEl.captureStream() : audioEl.mozCaptureStream?.();
-   if(!aStream || !aStream.getAudioTracks().length) throw new Error("تعذر التقاط الصوت من المتصفح");
+   const tracks = [...vStream.getVideoTracks()];
+   if(audioEl && audioEl.src){
+    audioEl.currentTime = 0;
+    await audioEl.play().catch(()=>{});
+    const aStream = audioEl.captureStream ? audioEl.captureStream() : audioEl.mozCaptureStream?.();
+    if(aStream && aStream.getAudioTracks().length) tracks.push(...aStream.getAudioTracks());
+   }
 
-   const stream = new MediaStream([...vStream.getVideoTracks(), ...aStream.getAudioTracks()]);
+   const stream = new MediaStream(tracks);
    const types = ["video/webm;codecs=vp9,opus","video/webm;codecs=vp8,opus","video/webm"];
    const mime = types.find(t => MediaRecorder.isTypeSupported(t));
    const recorder = new MediaRecorder(stream, mime ? {mimeType: mime} : {});
@@ -661,24 +790,22 @@ if($("pause")) $("pause").onclick = pause;
    };
 
    recorder.start();
-   audioEl.currentTime = 0;
-   await audioEl.play();
    if(hasVideo && videoEl) await videoEl.play().catch(()=>{});
 
    const t0 = performance.now();
    running = true;
    startTime = t0;
-   if($("status")) $("status").textContent = "جاري تسجيل الفيديو...";
+   if($("status")) $("status").textContent = "جاري تصدير الفيديو...";
 
    function step(){
     if(!exporting) return;
     elapsed = (performance.now() - t0) / 1000;
     draw(Math.min(elapsed, getDuration()));
-    if(elapsed < getDuration() && !audioEl.ended){
+    if(elapsed < getDuration() && !(audioEl && audioEl.src && audioEl.ended)){
      requestAnimationFrame(step);
     }else{
      running = false;
-     audioEl.pause();
+     if(audioEl && audioEl.src) audioEl.pause();
      if(hasVideo && videoEl) videoEl.pause();
      recorder.stop();
     }
