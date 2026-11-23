@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="ar" dir="rtl">
 <head>
@@ -19,7 +18,7 @@ p{color:#aeb5c8}
  border-radius:14px;margin:15px 0
 }
 label{display:block;margin:12px 0 6px}
-input,textarea,button{
+input,textarea,select,button{
  width:100%;padding:12px;border-radius:8px;
  border:1px solid #414b64;background:#293146;
  color:white;font-size:15px
@@ -29,8 +28,8 @@ button{background:#7455db;border:0;font-weight:bold;margin-top:12px}
 button.secondary{background:#39435a}
 button:disabled{opacity:.5}
 canvas{
- width:100%;height:auto;display:block;
- background:#080d1b;border-radius:12px
+ width:100%;max-height:540px;object-fit:contain;display:block;
+ background:#080d1b;border-radius:12px;margin:auto
 }
 .row{display:grid;grid-template-columns:1fr 1fr;gap:12px}
 .status{font-size:13px;color:#b9a0ff;margin-top:10px}
@@ -40,7 +39,7 @@ canvas{
 <body>
 <div class="app">
 <h1>IRAQI MOTION STUDIO</h1>
-<p>AI Motion Graphics Production Engine — Version 1.0</p>
+<p>AI Motion Graphics Production Engine — Stage 1: Visual Form & Composition</p>
 
 <div class="panel">
 <label>عنوان المشهد</label>
@@ -51,12 +50,50 @@ canvas{
 
 <div class="row">
 <div>
+<label>أبعاد المشهد</label>
+<select id="aspectRatio">
+<option value="16:9">16:9 (أفقي - يوتيوب وعروض)</option>
+<option value="9:16">9:16 (عمودي - ريلز وتيك توك)</option>
+<option value="1:1">1:1 (مربع - منشورات)</option>
+</select>
+</div>
+<div>
+<label>نمط الخلفية البصرية</label>
+<select id="bgStyle">
+<option value="grid">شبكة هندسية وهالة ضوئية</option>
+<option value="waves">موجات منحنية وطبقات ضوئية</option>
+<option value="particles">جسيمات متحركة وأشكال هندسية</option>
+</select>
+</div>
+</div>
+
+<div class="row">
+<div>
+<label>نمط التكوين البصري</label>
+<select id="layoutStyle">
+<option value="hero">تكوين سينمائي مركزي</option>
+<option value="lowerThird">عنوان سفلي (Lower Third للدمج)</option>
+<option value="card">بطاقة بصرية مؤطرة</option>
+</select>
+</div>
+<div>
 <label>لون التصميم</label>
 <input id="accent" type="color" value="#9875ff">
 </div>
+</div>
+
+<div class="row">
 <div>
 <label>مدة المشهد بالثواني</label>
 <input id="duration" type="number" min="5" max="120" value="15">
+</div>
+<div>
+<label>حجم الخط الأساسي</label>
+<select id="fontScale">
+<option value="1">متوازن (قياسي)</option>
+<option value="1.15">كبير (بارز)</option>
+<option value="0.9">ناعم (أنيق)</option>
+</select>
 </div>
 </div>
 
@@ -97,8 +134,32 @@ let elapsed = 0;
 let raf = 0;
 let audioURL = null;
 
-const W = canvas.width;
-const H = canvas.height;
+let W = canvas.width;
+let H = canvas.height;
+
+const particles = Array.from({length: 28}, (_, i) => ({
+ rx: ((i * 73) % 100) / 100,
+ ry: ((i * 41) % 100) / 100,
+ r: 2.5 + (i % 4) * 1.4,
+ speed: 0.25 + (i % 5) * 0.08,
+ phase: i * 0.7
+}));
+
+function applyAspectRatio(){
+ const ratio = $("aspectRatio").value;
+ if(ratio === "9:16"){
+  canvas.width = 720;
+  canvas.height = 1280;
+ }else if(ratio === "1:1"){
+  canvas.width = 1080;
+  canvas.height = 1080;
+ }else{
+  canvas.width = 1280;
+  canvas.height = 720;
+ }
+ W = canvas.width;
+ H = canvas.height;
+}
 
 function duration(){
  return Math.max(5,Math.min(120,Number($("duration").value)||15));
@@ -118,51 +179,106 @@ function roundedText(text,x,y,size,color,weight="bold"){
 }
 
 function drawBackground(t,color){
+ const style = $("bgStyle").value;
  const g=ctx.createLinearGradient(0,0,W,H);
  g.addColorStop(0,"#10182c");
  g.addColorStop(1,"#080b16");
  ctx.fillStyle=g;
  ctx.fillRect(0,0,W,H);
 
- ctx.save();
- ctx.globalAlpha=.12;
- ctx.strokeStyle=color;
- ctx.lineWidth=1;
- for(let x=0;x<W;x+=65){
-  ctx.beginPath();
-  ctx.moveTo(x,0);ctx.lineTo(x,H);ctx.stroke();
- }
- for(let y=0;y<H;y+=65){
-  ctx.beginPath();
-  ctx.moveTo(0,y);ctx.lineTo(W,y);ctx.stroke();
- }
- ctx.restore();
-
  const pulse=1+Math.sin(t*1.5)*.06;
  const glow=ctx.createRadialGradient(
-  W*.5,H*.45,20,W*.5,H*.45,450*pulse
+  W*.5,H*.45,20,W*.5,H*.45,Math.max(W,H)*.42*pulse
  );
  glow.addColorStop(0,color+"30");
  glow.addColorStop(1,"transparent");
  ctx.fillStyle=glow;
  ctx.fillRect(0,0,W,H);
+
+ if(style === "grid"){
+  ctx.save();
+  ctx.globalAlpha=.12;
+  ctx.strokeStyle=color;
+  ctx.lineWidth=1;
+  const step = Math.max(48, Math.round(Math.min(W,H) / 11));
+  for(let x=0;x<=W;x+=step){
+   ctx.beginPath();
+   ctx.moveTo(x,0);ctx.lineTo(x,H);ctx.stroke();
+  }
+  for(let y=0;y<=H;y+=step){
+   ctx.beginPath();
+   ctx.moveTo(0,y);ctx.lineTo(W,y);ctx.stroke();
+  }
+  ctx.restore();
+ }else if(style === "waves"){
+  ctx.save();
+  for(let layer=0;layer<3;layer++){
+   ctx.beginPath();
+   const baseY = H*(0.32 + layer*0.18);
+   for(let x=0;x<=W+20;x+=24){
+    const y = baseY + Math.sin(x*0.008 + t*(1.2+layer*0.3) + layer)*28;
+    if(x===0)ctx.moveTo(x,y);
+    else ctx.lineTo(x,y);
+   }
+   ctx.lineTo(W,H);
+   ctx.lineTo(0,H);
+   ctx.closePath();
+   ctx.fillStyle = color + (layer===0 ? "18" : layer===1 ? "12" : "0c");
+   ctx.fill();
+  }
+  ctx.restore();
+ }else if(style === "particles"){
+  ctx.save();
+  particles.forEach((p, idx)=>{
+   const px = ((p.rx * W) + Math.sin(t*p.speed + p.phase)*26 + W) % W;
+   const py = ((p.ry * H) + Math.cos(t*p.speed*0.9 + p.phase)*26 + H) % H;
+   ctx.globalAlpha = 0.22 + 0.14*Math.sin(t*2 + idx);
+   ctx.fillStyle = idx % 3 === 0 ? "#ffffff" : color;
+   ctx.beginPath();
+   ctx.arc(px, py, p.r * (Math.min(W,H)/720), 0, Math.PI*2);
+   ctx.fill();
+  });
+  ctx.strokeStyle = color + "28";
+  ctx.lineWidth = 2;
+  ctx.strokeRect(W*0.05, H*0.06, W*0.90, H*0.88);
+  ctx.restore();
+ }
 }
 
-function drawImage(t){
+function drawImage(t, layout, isPortrait){
  if(!photo)return;
 
  const progress=ease(t/1.1);
  const scale=1.04-progress*.04;
  const iw=photo.width,ih=photo.height;
- const fit=Math.max(W*.44/iw,H*.58/ih);
- const sw=iw*fit*scale,sh=ih*fit*scale;
- const x=W*.72-sw/2;
- const y=H*.48-sh/2;
+
+ let boxW, boxH, cx, cy;
+ if(layout === "lowerThird"){
+  boxW = W*0.22;
+  boxH = H*0.16;
+  cx = W*0.84;
+  cy = H*0.79;
+ }else if(isPortrait){
+  boxW = W*0.64;
+  boxH = H*0.28;
+  cx = W*0.5;
+  cy = H*0.66;
+ }else{
+  boxW = W*0.38;
+  boxH = H*0.48;
+  cx = W*0.74;
+  cy = H*0.48;
+ }
+
+ const fit=Math.min(boxW/iw, boxH/ih);
+ const sw=iw*fit*scale, sh=ih*fit*scale;
+ const x=cx-sw/2;
+ const y=cy-sh/2;
 
  ctx.save();
  ctx.globalAlpha=ease(t/.8);
  ctx.shadowColor="#000";
- ctx.shadowBlur=35;
+ ctx.shadowBlur=30;
  ctx.drawImage(photo,x,y,sw,sh);
  ctx.restore();
 }
@@ -171,56 +287,110 @@ function draw(t){
  const color=$("accent").value;
  const title=$("title").value;
  const subtitle=$("subtitle").value;
+ const layout=$("layoutStyle").value;
+ const scaleFactor=Number($("fontScale").value)||1;
+ const isPortrait = H > W;
  const intro=ease(t/.9);
  const exit=1-ease((t-duration()+.65)/.65);
 
  ctx.clearRect(0,0,W,H);
  drawBackground(t,color);
 
- // Animated accent line
- ctx.save();
- ctx.globalAlpha=intro*exit;
- ctx.fillStyle=color;
- ctx.fillRect(W*.08,H*.28,Math.min(W*.84,t*700),5);
- ctx.restore();
-
- drawImage(t);
-
  const hasImage=!!photo;
- const textX=hasImage?W*.30:W*.5;
- const textY=H*.45;
- const movement=(1-intro)*55;
+ const movement=(1-intro)*48;
 
- ctx.save();
- ctx.globalAlpha=intro*exit;
- ctx.translate(0,movement);
+ if(layout === "lowerThird"){
+  const barW = W*0.86;
+  const barH = Math.max(125, H*0.18);
+  const barX = W*0.07;
+  const barY = H*0.70 + movement*0.4;
 
- roundedText(
-  title,textX,textY,
-  hasImage?52:76,"#ffffff"
- );
+  ctx.save();
+  ctx.globalAlpha = intro*exit;
+  ctx.fillStyle = "#0b1020e6";
+  ctx.fillRect(barX, barY, barW, barH);
+  ctx.fillStyle = color;
+  ctx.fillRect(barX + barW - 8, barY, 8, barH);
 
- ctx.font="30px Arial";
- ctx.textAlign="center";
- ctx.textBaseline="top";
- ctx.direction="rtl";
- ctx.fillStyle="#c5cce0";
+  drawImage(t, layout, isPortrait);
 
- const words=subtitle.split(/\s+/);
- let line="",lines=[],maxWidth=hasImage?500:900;
- for(const word of words){
-  const test=line?line+" "+word:word;
-  if(ctx.measureText(test).width>maxWidth&&line){
-   lines.push(line);line=word;
-  }else line=test;
+  const tx = hasImage ? W*0.44 : W*0.5;
+  const maxW = hasImage ? W*0.62 : W*0.76;
+  roundedText(title, tx, barY + barH*0.42, Math.round(36*scaleFactor), "#ffffff");
+
+  ctx.font = Math.round(22*scaleFactor) + "px Arial";
+  ctx.textAlign = "center";
+  ctx.textBaseline = "top";
+  ctx.direction = "rtl";
+  ctx.fillStyle = "#c5cce0";
+  ctx.fillText(subtitle, tx, barY + barH*0.54, maxW);
+  ctx.restore();
+ }else{
+  if(layout === "card"){
+   ctx.save();
+   ctx.globalAlpha = intro*exit*0.55;
+   ctx.fillStyle = "#141c2f";
+   ctx.strokeStyle = color + "66";
+   ctx.lineWidth = 2;
+   const padX = W*0.06;
+   const padY = H*0.12;
+   ctx.fillRect(padX, padY, W - padX*2, H - padY*2);
+   ctx.strokeRect(padX, padY, W - padX*2, H - padY*2);
+   ctx.restore();
+  }
+
+  ctx.save();
+  ctx.globalAlpha=intro*exit;
+  ctx.fillStyle=color;
+  ctx.fillRect(W*.08,H*.24,Math.min(W*.84,t*(W*0.55)),5);
+  ctx.restore();
+
+  drawImage(t, layout, isPortrait);
+
+  let textX = W*.5;
+  let textY = H*.42;
+  let titleSize = (isPortrait ? 50 : 66) * scaleFactor;
+  let subSize = (isPortrait ? 26 : 30) * scaleFactor;
+  let maxWidth = W*.80;
+
+  if(hasImage && !isPortrait){
+   textX = W*.30;
+   textY = H*.44;
+   titleSize = 48 * scaleFactor;
+   maxWidth = W*.42;
+  }else if(hasImage && isPortrait){
+   textY = H*.34;
+   maxWidth = W*.82;
+  }
+
+  ctx.save();
+  ctx.globalAlpha=intro*exit;
+  ctx.translate(0,movement);
+
+  roundedText(title, textX, textY, Math.round(titleSize), "#ffffff");
+
+  ctx.font=Math.round(subSize)+"px Arial";
+  ctx.textAlign="center";
+  ctx.textBaseline="top";
+  ctx.direction="rtl";
+  ctx.fillStyle="#c5cce0";
+
+  const words=subtitle.split(/\s+/);
+  let line="",lines=[];
+  for(const word of words){
+   const test=line?line+" "+word:word;
+   if(ctx.measureText(test).width>maxWidth&&line){
+    lines.push(line);line=word;
+   }else line=test;
+  }
+  if(line)lines.push(line);
+
+  lines.slice(0,4).forEach((item,i)=>{
+   ctx.fillText(item,textX,textY + titleSize*0.75 + i*(subSize*1.35));
+  });
+
+  ctx.restore();
  }
- if(line)lines.push(line);
-
- lines.slice(0,4).forEach((item,i)=>{
-  ctx.fillText(item,textX,textY+45+i*42);
- });
-
- ctx.restore();
 
  // Progress indicator
  const progress=Math.min(1,t/duration());
@@ -270,6 +440,11 @@ function pause(){
  $("status").textContent="تم إيقاف المعاينة";
 }
 
+$("aspectRatio").addEventListener("change",()=>{
+ applyAspectRatio();
+ draw(elapsed);
+});
+
 $("imageInput").addEventListener("change",e=>{
  const file=e.target.files[0];
  if(!file)return;
@@ -298,8 +473,9 @@ $("audioInput").addEventListener("change",e=>{
  $("status").textContent="تم تحميل الصوت";
 });
 
-["title","subtitle","accent","duration"].forEach(id=>{
+["title","subtitle","bgStyle","layoutStyle","accent","duration","fontScale"].forEach(id=>{
  $(id).addEventListener("input",()=>draw(elapsed));
+ $(id).addEventListener("change",()=>draw(elapsed));
 });
 
 $("play").onclick=play;
@@ -398,6 +574,7 @@ $("export").onclick=async()=>{
  }
 };
 
+applyAspectRatio();
 draw(0);
 </script>
 </body>
