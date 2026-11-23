@@ -1,889 +1,863 @@
 <!DOCTYPE html>
 <html lang="ar" dir="rtl">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Iraqi Motion Studio</title>
-<style>
-*{box-sizing:border-box}
-body{
- margin:0;background:#0b0f19;color:#f4f6fc;
- font-family:"Segoe UI",Tahoma,Arial,sans-serif;padding:18px
-}
-.app{max-width:1040px;margin:auto}
-h1{font-size:24px;color:#c9b5ff;margin:0 0 4px}
-p{color:#a8b3cf;margin:0 0 14px;font-size:14px}
-.panel{
- background:#161d2f;padding:16px;
- border-radius:14px;margin:14px 0;border:1px solid #28334e
-}
-label{display:block;margin:11px 0 5px;font-size:14px;color:#e6ebfa}
-input,textarea,select,button{
- width:100%;padding:11px 12px;border-radius:9px;
- border:1px solid #384464;background:#222b42;
- color:#fff;font-size:15px
-}
-textarea{min-height:68px;resize:vertical}
-button{background:#7755e8;border:0;font-weight:700;margin-top:12px;cursor:pointer}
-button.secondary{background:#323d5a}
-button:disabled{opacity:.5;cursor:not-allowed}
-.manual-box{
- display:none;margin-top:12px;padding-top:12px;
- border-top:1px dashed #374363
-}
-.manual-box.open{display:block}
-canvas{
- width:100%;max-height:540px;object-fit:contain;display:block;
- background:#070a12;border-radius:12px;margin:auto
-}
-.row{display:grid;grid-template-columns:1fr 1fr;gap:12px}
-.director-box{
- background:#101624;border-right:4px solid #a685ff;
- padding:12px 14px;border-radius:9px;margin-top:14px;
- font-size:14px;line-height:1.65;color:#dfe6fa
-}
-.palette-bar{display:flex;gap:8px;margin-top:8px;align-items:center;flex-wrap:wrap}
-.swatch{width:22px;height:22px;border-radius:50%;border:1px solid rgba(255,255,255,.35)}
-.status{font-size:13px;color:#c9b5ff;margin-top:10px}
-@media(max-width:560px){.row{grid-template-columns:1fr}}
-</style>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>MASTER_ENGINE — محرك موشن جرافيك ديناميكي</title>
+  <style>
+    :root {
+      --bg: #0c0e14;
+      --panel: #151924;
+      --panel-2: #1c2231;
+      --text: #f3f5fa;
+      --muted: #9aa3b8;
+      --accent: #f5b700;
+      --accent-2: #38bdf8;
+      --danger: #ef4444;
+      --ok: #22c55e;
+      --border: rgba(255, 255, 255, 0.1);
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      font-family: system-ui, -apple-system, "Segoe UI", Tahoma, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.5;
+    }
+
+    .app {
+      max-width: 1120px;
+      margin: 0 auto;
+      padding: 16px;
+      display: grid;
+      gap: 14px;
+    }
+
+    .header {
+      background: linear-gradient(135deg, var(--panel), var(--panel-2));
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 14px 18px;
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+    }
+
+    .header h1 {
+      margin: 0;
+      font-size: 1.15rem;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .badge {
+      background: rgba(245, 183, 0, 0.15);
+      color: var(--accent);
+      border: 1px solid rgba(245, 183, 0, 0.35);
+      padding: 2px 10px;
+      border-radius: 999px;
+      font-size: 0.78rem;
+      font-weight: 700;
+    }
+
+    .grid-main {
+      display: grid;
+      grid-template-columns: 1.15fr 0.85fr;
+      gap: 14px;
+    }
+
+    @media (max-width: 860px) {
+      .grid-main { grid-template-columns: 1fr; }
+    }
+
+    .card {
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 14px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .stage-wrap {
+      position: relative;
+      width: 100%;
+      aspect-ratio: 16 / 9;
+      background: #06070a;
+      border-radius: 12px;
+      overflow: hidden;
+      border: 1px solid var(--border);
+    }
+
+    .stage-wrap.portrait {
+      aspect-ratio: 9 / 16;
+      max-height: 540px;
+      margin: 0 auto;
+    }
+
+    canvas#motionCanvas {
+      width: 100%;
+      height: 100%;
+      display: block;
+    }
+
+    .controls-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      align-items: center;
+    }
+
+    button, .file-btn {
+      background: var(--panel-2);
+      color: var(--text);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 9px 14px;
+      font-size: 0.88rem;
+      font-weight: 600;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      transition: transform 0.12s ease, background 0.15s ease, border-color 0.15s ease;
+    }
+
+    button:hover, .file-btn:hover {
+      background: #252d40;
+      border-color: rgba(255, 255, 255, 0.24);
+    }
+
+    button:active { transform: scale(0.98); }
+
+    button.primary {
+      background: var(--accent);
+      color: #111318;
+      border-color: transparent;
+    }
+
+    button.primary:hover { background: #ffc61a; }
+
+    button.danger {
+      background: rgba(239, 68, 68, 0.16);
+      color: #fca5a5;
+      border-color: rgba(239, 68, 68, 0.35);
+    }
+
+    input[type="file"] { display: none; }
+
+    .field-group {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    label.lbl {
+      font-size: 0.84rem;
+      color: var(--muted);
+      font-weight: 600;
+    }
+
+    select, textarea {
+      width: 100%;
+      background: var(--panel-2);
+      color: var(--text);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 9px 11px;
+      font-family: inherit;
+      font-size: 0.86rem;
+    }
+
+    textarea {
+      min-height: 110px;
+      resize: vertical;
+    }
+
+    .status-bar {
+      font-size: 0.82rem;
+      color: var(--muted);
+      background: var(--panel-2);
+      border-radius: 10px;
+      padding: 8px 12px;
+      display: flex;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+
+    .pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      font-size: 0.78rem;
+      padding: 3px 9px;
+      border-radius: 999px;
+      background: rgba(56, 189, 248, 0.12);
+      color: var(--accent-2);
+      border: 1px solid rgba(56, 189, 248, 0.25);
+    }
+
+    .cue-preview {
+      background: var(--panel-2);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 10px 12px;
+      font-size: 0.84rem;
+    }
+
+    .cue-preview strong { color: var(--accent); }
+    .hint { font-size: 0.78rem; color: var(--muted); }
+  </style>
 </head>
 <body>
-<div class="app">
-<h1>IRAQI MOTION STUDIO</h1>
-<p>مخرج موشن جرافيك صوتي وبصري — ارفع الفيديو فقط ليحلل صوته ومشهده ويبني الموشن</p>
+  <div class="app">
+    <header class="header">
+      <h1>
+        <span>MASTER_ENGINE</span>
+        <span class="badge">مخرج موشن ديناميكي</span>
+      </h1>
+      <div class="controls-row">
+        <span class="pill" id="moodPill">الحالة: بانتظار التحليل</span>
+        <span class="pill" id="cuePill">المقطع: —</span>
+      </div>
+    </header>
 
-<div class="panel">
-<label>إضافة مقطع فيديو (يحلل المخرج صوته ومشهده تلقائياً)</label>
-<input id="videoInput" type="file" accept="video/*">
+    <div class="grid-main">
+      <section class="card">
+        <div class="stage-wrap" id="stageWrap">
+          <canvas id="motionCanvas" width="1280" height="720"></canvas>
+          <video id="sourceVideo" playsinline crossorigin="anonymous" style="display:none;"></video>
+        </div>
 
-<label>عنوان المشهد (اختياري — يولّده المخرج تلقائياً من نبض الفيديو إذا تُرك)</label>
-<input id="title" value="قصة تبدأ من هنا">
+        <div class="controls-row">
+          <button class="primary" id="playBtn">▶ تشغيل / إيقاف</button>
+          <button id="analyzeBtn">⚡ تحليل ومزامنة</button>
+          <button id="exportBtn">⏺ تصدير WebM</button>
+          <button class="danger" id="stopExportBtn" style="display:none;">⏹ إيقاف التصدير</button>
+        </div>
 
-<label>النص التوضيحي (اختياري)</label>
-<textarea id="subtitle">تحليل صوتي وبصري تلقائي لبناء المشهد</textarea>
+        <div class="status-bar">
+          <span id="statusText">ارفع الفيديو والملف النصي (.srt / .vtt / .txt) للبدء.</span>
+          <span id="timeText">00:00 / 00:00</span>
+        </div>
 
-<button id="toggleManual" type="button" class="secondary">تعديل يدوي (اختياري)</button>
+        <div class="cue-preview" id="directorNote">
+          <strong>توجيه المخرج الحالي:</strong> لم يتم تحميل نص بعد. عند إرفاق ملف نصي، يقرأ المحرك الأفكار والحالات والتعداد والمقارنات لتوليد تنقلات ورموز مناسبة لكل مقطع.
+        </div>
+      </section>
 
-<div id="manualBox" class="manual-box">
-<div class="row">
-<div>
-<label>إضافة صورة مساندة</label>
-<input id="imageInput" type="file" accept="image/*">
-</div>
-<div>
-<label>التكوين</label>
-<select id="layoutMode">
-<option value="auto">تلقائي (قرار المخرج)</option>
-<option value="lowerThird">شريط سفلي يحمي المتحدث</option>
-<option value="split">تقسيم متوازن</option>
-<option value="hero">تركيز مركزي</option>
-<option value="card">بطاقة تحريرية</option>
-</select>
-</div>
-</div>
+      <aside class="card">
+        <div class="controls-row">
+          <label class="file-btn">
+            🎬 رفع الفيديو
+            <input type="file" id="videoInput" accept="video/*" />
+          </label>
 
-<div class="row">
-<div>
-<label>إيقاع الحركة</label>
-<select id="motionMode">
-<option value="auto">تلقائي حسب الصوت والمشهد</option>
-<option value="cinematic">انسياب سينمائي هادئ</option>
-<option value="snappy">إيقاع حاسم وسريع</option>
-<option value="editorial">حضور تحريري متزن</option>
-</select>
-</div>
-<div>
-<label>أبعاد المشهد</label>
-<select id="aspectRatio">
-<option value="16:9">16:9 (أفقي)</option>
-<option value="9:16">9:16 (عمودي)</option>
-<option value="1:1">1:1 (مربع)</option>
-</select>
-</div>
-</div>
+          <label class="file-btn">
+            📄 ملف نصي (SRT/VTT/TXT)
+            <input type="file" id="scriptInput" accept=".srt,.vtt,.txt,text/plain" />
+          </label>
 
-<div class="row">
-<div>
-<label>مدة المشهد (بالثواني)</label>
-<input id="duration" type="number" min="5" max="120" value="15">
-</div>
-<div>
-<label>لون التمييز</label>
-<input id="accent" type="color" value="#9875ff">
-</div>
-</div>
+          <label class="file-btn">
+            🖼 صور مساندة
+            <input type="file" id="imageInput" accept="image/*" multiple />
+          </label>
+        </div>
 
-<div>
-<label>نمط الخلفية (بدون فيديو)</label>
-<select id="bgStyle">
-<option value="grid">شبكة هندسية وهالة</option>
-<option value="waves">موجات منحنية</option>
-<option value="particles">جسيمات متحركة</option>
-</select>
-</div>
-</div>
+        <div class="field-group">
+          <label class="lbl" for="aspectSelect">نسبة أبعاد الكادر</label>
+          <select id="aspectSelect">
+            <option value="16:9">أفقي 16:9 (يوتيوب / عرض واسع)</option>
+            <option value="9:16">عمودي 9:16 (ريلز / تيك توك / شورتس)</option>
+          </select>
+        </div>
 
-<div class="director-box" id="directorBrief">بانتظار الفيديو لتحليل الصوت والمشهد وبناء الموشن...</div>
-<div class="palette-bar" id="paletteBar"></div>
-</div>
+        <div class="field-group">
+          <label class="lbl" for="scriptTextarea">
+            النص المرفق / الملاحظات (يمكنك تعديله أو لصقه مباشرة هنا)
+          </label>
+          <textarea id="scriptTextarea" placeholder="مثال:
+00:00 - 00:05 | مقدمة بودكاست هادئة ومريحة للعين عن أسباب ضياع الوقت
+00:05 - 00:14 | تعداد 1، 2، 3، 4 لأهم الخطوات العملية
+00:14 - 00:22 | مقارنة بين الطريقة القديمة والطريقة الحديثة
+00:22 - 00:30 | تنبيه مهم وتوتر حول خطأ شائع يجب تجنبه"></textarea>
+          <span class="hint">
+            يدعم صيغ SRT وVTT والأسطر الموقّتة (00:05 - 00:12) أو الأسطر العادية الموزّعة تلقائياً على مدة الفيديو.
+          </span>
+        </div>
+      </aside>
+    </div>
+  </div>
+    <script>
+    const canvas = document.getElementById("motionCanvas");
+    const ctx = canvas.getContext("2d");
+    const videoEl = document.getElementById("sourceVideo");
+    const stageWrap = document.getElementById("stageWrap");
 
-<div class="panel">
-<canvas id="stage" width="1280" height="720"></canvas>
-<div class="row">
-<button id="play" type="button">▶ تشغيل المعاينة</button>
-<button id="pause" type="button" class="secondary">Ⅱ إيقاف</button>
-</div>
-<button id="export" type="button">تصدير الفيديو WebM</button>
-<div class="status" id="status">جاهز</div>
-</div>
-</div>
+    const videoInput = document.getElementById("videoInput");
+    const scriptInput = document.getElementById("scriptInput");
+    const imageInput = document.getElementById("imageInput");
+    const scriptTextarea = document.getElementById("scriptTextarea");
+    const aspectSelect = document.getElementById("aspectSelect");
 
-<video id="video" playsinline preload="auto" style="display:none"></video>
-<script>
-(function(){
-"use strict";
+    const playBtn = document.getElementById("playBtn");
+    const analyzeBtn = document.getElementById("analyzeBtn");
+    const exportBtn = document.getElementById("exportBtn");
+    const stopExportBtn = document.getElementById("stopExportBtn");
 
-const $ = id => document.getElementById(id);
-const canvas = $("stage");
-const ctx = canvas ? canvas.getContext("2d") : null;
-const videoEl = $("video");
+    const statusText = document.getElementById("statusText");
+    const timeText = document.getElementById("timeText");
+    const moodPill = document.getElementById("moodPill");
+    const cuePill = document.getElementById("cuePill");
+    const directorNote = document.getElementById("directorNote");
 
-const probeCanvas = document.createElement("canvas");
-probeCanvas.width = 48;
-probeCanvas.height = 48;
-const probeCtx = probeCanvas.getContext("2d", { willReadFrequently: true });
+    const TRANSITIONS = ["wipe", "split", "slide", "reframe"];
+    const MOTIFS = ["list", "compare", "alert", "question", "flow", "calm"];
 
-let audioCtx = null;
-let analyser = null;
-let audioSourceNode = null;
-let freqData = null;
-let timeData = null;
+    let segments = [];
+    let loadedImages = [];
+    let audioCtx = null;
+    let analyser = null;
+    let freqData = null;
+    let audioSourceNode = null;
 
-let prevFrameLuma = null;
-let photo = null;
-let hasVideo = false;
-let running = false;
-let exporting = false;
-let startTime = 0;
-let elapsed = 0;
-let raf = 0;
-let videoURL = null;
-let W = canvas ? canvas.width : 1280;
-let H = canvas ? canvas.height : 720;
-let sceneAccent = "#9875ff";
-let lastAccentSync = 0;
+    let lastSegmentIndex = -1;
+    let transitionStartPerf = 0;
+    let activeTransition = "wipe";
+    let prevCanvasSnapshot = null;
+    const snapCanvas = document.createElement("canvas");
+    const snapCtx = snapCanvas.getContext("2d");
 
-function ensureAudioAnalyzer(){
- if(!videoEl) return;
- try{
-  const AC = window.AudioContext || window.webkitAudioContext;
-  if(!AC) return;
-  if(!audioCtx) audioCtx = new AC();
-  if(audioCtx.state === "suspended") audioCtx.resume().catch(()=>{});
-  if(!audioSourceNode){
-   audioSourceNode = audioCtx.createMediaElementSource(videoEl);
-   analyser = audioCtx.createAnalyser();
-   analyser.fftSize = 256;
-   audioSourceNode.connect(analyser);
-   analyser.connect(audioCtx.destination);
-   freqData = new Uint8Array(analyser.frequencyBinCount);
-   timeData = new Uint8Array(analyser.fftSize);
-  }
- }catch(_){}
-}
-
-function sampleAudioFromVideo(){
- if(!analyser || !timeData || !freqData || !hasVideo || !running && !exporting){
-  return { voiceLevel: 0, voiceBeat: 0, speaking: false };
- }
- try{
-  analyser.getByteTimeDomainData(timeData);
-  analyser.getByteFrequencyData(freqData);
-  let sumSq = 0;
-  for(let i = 0; i < timeData.length; i++){
-   const norm = (timeData[i] - 128) / 128;
-   sumSq += norm * norm;
-  }
-  const rms = Math.sqrt(sumSq / timeData.length);
-  const voiceLevel = Math.min(100, Math.round(rms * 260));
-
-  let lowSum = 0, lowCount = 0;
-  for(let i = 2; i < Math.min(28, freqData.length); i++){
-   lowSum += freqData[i];
-   lowCount++;
-  }
-  const voiceBeat = lowCount ? Math.min(100, Math.round((lowSum / lowCount) / 2.55)) : 0;
-  return { voiceLevel, voiceBeat, speaking: voiceLevel > 12 };
- }catch(_){
-  return { voiceLevel: 0, voiceBeat: 0, speaking: false };
- }
-}
-
-function rgbToHex(r, g, b){
- const clamp = v => Math.max(0, Math.min(255, Math.round(v))).toString(16).padStart(2, "0");
- return "#" + clamp(r) + clamp(g) + clamp(b);
-}
-
-function liftAccentColor(r, g, b){
- const max = Math.max(r, g, b);
- const min = Math.min(r, g, b);
- if(max - min < 34) return "#9875ff";
- const scale = max < 145 ? 165 / Math.max(1, max) : max > 235 ? 220 / max : 1.12;
- return rgbToHex(r * scale, g * scale, b * scale);
-}
-
-function sampleVisualFromSource(src, trackMotion){
- if(!probeCtx || !src){
-  return { accent: sceneAccent, topBright: 120, midBright: 120, bottomBright: 120, motionEnergy: 0 };
- }
- try{
-  probeCtx.clearRect(0, 0, 48, 48);
-  probeCtx.drawImage(src, 0, 0, 48, 48);
-  const data = probeCtx.getImageData(0, 0, 48, 48).data;
-
-  let rSum = 0, gSum = 0, bSum = 0, total = 0;
-  let topL = 0, topC = 0, midL = 0, midC = 0, botL = 0, botC = 0;
-  let diffSum = 0;
-  const currLuma = trackMotion ? new Float32Array(48 * 48) : null;
-
-  for(let y = 0; y < 48; y++){
-   for(let x = 0; x < 48; x++){
-    const idx = y * 48 + x;
-    const i = idx * 4;
-    const r = data[i], g = data[i + 1], b = data[i + 2];
-    const luma = 0.299 * r + 0.587 * g + 0.114 * b;
-    rSum += r; gSum += g; bSum += b; total++;
-    if(currLuma) currLuma[idx] = luma;
-    if(prevFrameLuma && trackMotion){
-     diffSum += Math.abs(luma - prevFrameLuma[idx]);
+    function parseTimeToSec(str) {
+      if (!str) return null;
+      const clean = str.trim().replace(",", ".");
+      const parts = clean.split(":").map(Number);
+      if (parts.some(Number.isNaN)) return null;
+      if (parts.length === 3) return parts[0] * 3600 + parts[1] * 60 + parts[2];
+      if (parts.length === 2) return parts[0] * 60 + parts[1];
+      return null;
     }
-    if(y < 16){ topL += luma; topC++; }
-    else if(y < 32){ midL += luma; midC++; }
-    else{ botL += luma; botC++; }
-   }
-  }
 
-  if(trackMotion && currLuma) prevFrameLuma = currLuma;
+    function detectMoodAndMotif(text, index) {
+      const t = text.toLowerCase();
+      const hasList = /(\b1\b|\b2\b|\b3\b|\b4\b|١|٢|٣|٤|تعداد|خطوات|نقاط|أولاً|ثانياً|ثالثاً|رابعاً)/.test(t);
+      const hasCompare = /(مقارنة|مقابل|بين|أو|بدل|فرق|vs|قديم|جديد)/.test(t);
+      const hasAlert = /(تحذير|تنبيه|خطر|خطير|انتبه|متعصب|توتر|معركة|صراع|انفجار|سلبي|احذر|!)/.test(t);
+      const hasQuestion = /(لماذا|كيف|متى|هل|ما هو|ماذا|؟|\?)/.test(t);
+      const hasCalm = /(هادئ|مريح|بودكاست|استرخاء|سرد|قصة|بهدوء)/.test(t);
 
-  const motionEnergy = trackMotion && total ? Math.min(100, Math.round((diffSum / total) * 2.4)) : 0;
-  return {
-   accent: liftAccentColor(rSum / Math.max(1, total), gSum / Math.max(1, total), bSum / Math.max(1, total)),
-   topBright: Math.round(topL / Math.max(1, topC)),
-   midBright: Math.round(midL / Math.max(1, midC)),
-   bottomBright: Math.round(botL / Math.max(1, botC)),
-   motionEnergy
-  };
- }catch(_){
-  return { accent: sceneAccent, topBright: 120, midBright: 120, bottomBright: 120, motionEnergy: 0 };
- }
-}
+      let motif = MOTIFS[index % MOTIFS.length];
+      let moodLabel = "أفكار متتابعة";
+      let accentColor = "#f5b700";
+      let pace = 1.0;
 
-function detectDir(text){
- const ar = (text.match(/[\u0600-\u06FF]/g) || []).length;
- const en = (text.match(/[A-Za-z]/g) || []).length;
- if(ar === 0 && en > 0) return "ltr";
- if(en > ar * 1.5) return "ltr";
- return "rtl";
-}
+      if (hasAlert) {
+        motif = "alert";
+        moodLabel = "توتر / إبراز حاد";
+        accentColor = "#ef4444";
+        pace = 1.35;
+      } else if (hasCompare) {
+        motif = "compare";
+        moodLabel = "مقارنة وتباين";
+        accentColor = "#38bdf8";
+        pace = 1.05;
+      } else if (hasList) {
+        motif = "list";
+        moodLabel = "تعداد وتسلسل";
+        accentColor = "#22c55e";
+        pace = 1.1;
+      } else if (hasQuestion) {
+        motif = "question";
+        moodLabel = "تساؤل واستكشاف";
+        accentColor = "#a855f7";
+        pace = 1.0;
+      } else if (hasCalm) {
+        motif = "calm";
+        moodLabel = "مريح للعين / بودكاست";
+        accentColor = "#34d399";
+        pace = 0.75;
+      }
 
-function directorPlan(title, subtitle, vidReady, imgReady, isPortrait, vis, aud){
- const combined = (title + " " + subtitle).trim();
- const words = combined.split(/\s+/).filter(Boolean).length;
- const dir = detectDir(combined);
+      const listItems = text
+        .split(/[,،\-–|•\n]+/)
+        .map(s => s.trim())
+        .filter(Boolean)
+        .slice(0, 4);
 
- const alertRe = /(عاجل|تنبيه|خطير|مهم|سر|تحذير|احذر|لا تفوت|الآن|urgent|warning|alert|breaking|important)/i;
- const questRe = /[؟?]|(لماذا|كيف|متى|أين|هل|what|why|how|when|where)/i;
- const dataRe = /(\d+%|\d+\s*(مليون|ألف|سنة|يوم|خطوة|million|thousand|years|days))/i;
-
- let intent = aud.speaking ? "voiceDriven" : "editorial";
- let highWeight = aud.voiceLevel > 55;
- if(alertRe.test(combined) || (title.trim().length > 0 && title.trim().split(/\s+/).length <= 3)){
-  intent = alertRe.test(combined) ? "alert" : "hook";
-  highWeight = true;
- }else if(dataRe.test(combined)){
-  intent = "data";
-  highWeight = true;
- }else if(questRe.test(combined)){
-  intent = "question";
- }else if(words > 24){
-  intent = "narrative";
- }
-
- const layoutSel = $("layoutMode") ? $("layoutMode").value : "auto";
- const motionSel = $("motionMode") ? $("motionMode").value : "auto";
-
- const layout = layoutSel !== "auto"
-  ? layoutSel
-  : vidReady
-    ? "lowerThird"
-    : (imgReady && !isPortrait)
-      ? "split"
-      : (highWeight && words <= 12)
-        ? "hero"
-        : "card";
-
- const motion = motionSel !== "auto"
-  ? motionSel
-  : (aud.voiceLevel > 50 || vis.motionEnergy > 28 || intent === "alert" || intent === "hook" || intent === "data")
-    ? "snappy"
-    : (intent === "question" || intent === "narrative")
-      ? "cinematic"
-      : "editorial";
-
- const titleScale = (highWeight ? 1.12 : intent === "narrative" ? 0.90 : 1.0) + (aud.speaking ? 0.04 : 0);
- const subScale = words > 22 ? 0.85 : highWeight ? 1.03 : 1.0;
-
- const intentMap = {
-  voiceDriven: "بناء موشن متفاعل مع نبض الصوت والكلام",
-  alert: "تركيز تنبيهي حاسم",
-  hook: "افتتاحية خاطفة",
-  data: "إبراز معلوماتي/رقمي",
-  question: "طرح تساؤلي تأملي",
-  narrative: "سرد تفصيلي متدرج",
-  editorial: "إخراج تحريري متزن"
- };
- const layoutMap = {
-  lowerThird: "شريط سفلي يحمي وجه المتحدث وإطار المشهد",
-  split: "تقسيم متوازن يبعد النص عن تزاحم الصورة",
-  hero: "تركيز مركزي عالي الحضور",
-  card: "بطاقة تحريرية ناعمة ذات عمق بصري"
- };
- const motionMap = {
-  snappy: "حركة حاسمة متجاوبة مع الصوت والحركة",
-  cinematic: "انسياب سينمائي هادئ",
-  editorial: "حضور تحريري متزن"
- };
-
- const voiceState = vidReady
-  ? (aud.speaking ? `صوت نشط (${aud.voiceLevel}%)` : "هدوء صوتي/توقف")
-  : "بدون فيديو";
-
- const sceneNote = vidReady
-  ? `${voiceState} • إضاءة الأسفل ${vis.bottomBright}/255 • حركة ${vis.motionEnergy}%`
-  : "إخراج لوني وفراغي متوازن";
-
- const brief = `قرار المخرج: ${dir === "ltr" ? "LTR" : "RTL"} • ${intentMap[intent]} • ${layoutMap[layout]} • ${motionMap[motion]} (${sceneNote}).`;
- return { dir, layout, motion, titleScale, subScale, brief };
-}
-
-function applyAspectRatio(){
- if(!canvas || !$("aspectRatio")) return;
- const r = $("aspectRatio").value;
- if(r === "9:16"){ canvas.width = 720; canvas.height = 1280; }
- else if(r === "1:1"){ canvas.width = 1080; canvas.height = 1080; }
- else{ canvas.width = 1280; canvas.height = 720; }
- W = canvas.width; H = canvas.height;
-}
-
-function getDuration(){
- const v = $("duration") ? Number($("duration").value) : 15;
- return Math.max(5, Math.min(120, v || 15));
-}
-
-function ease(t, mode){
- t = Math.max(0, Math.min(1, t));
- if(mode === "snappy") return 1 - Math.pow(1 - t, 4);
- if(mode === "cinematic") return t < 0.5 ? 2 * t * t : 1 - Math.pow(-2 * t + 2, 2) / 2;
- return 1 - Math.pow(1 - t, 3);
-}
-
-function roundRectPath(x, y, w, h, rad){
- const r = Math.min(rad, w / 2, h / 2);
- ctx.beginPath();
- ctx.moveTo(x + r, y);
- ctx.arcTo(x + w, y, x + w, y + h, r);
- ctx.arcTo(x + w, y + h, x, y + h, r);
- ctx.arcTo(x, y + h, x, y, r);
- ctx.arcTo(x, y, x + w, y, r);
- ctx.closePath();
-}
-
-function wrapTextLines(text, maxW, maxLines){
- const paragraphs = String(text || "").split(/\r?\n/);
- const out = [];
- for(const para of paragraphs){
-  const words = para.trim().split(/\s+/).filter(Boolean);
-  if(!words.length){
-   if(out.length && out.length < maxLines) out.push("");
-   continue;
-  }
-  let line = "";
-  for(const w of words){
-   const test = line ? line + " " + w : w;
-   if(ctx.measureText(test).width > maxW && line){
-    out.push(line);
-    line = w;
-    if(out.length >= maxLines) return out;
-   }else{
-    line = test;
-   }
-  }
-  if(line && out.length < maxLines) out.push(line);
-  if(out.length >= maxLines) break;
- }
- return out.slice(0, maxLines);
-}
-
-function drawText(text, x, y, size, color, dir, align, weight, baseline){
- if(!ctx || !text) return;
- ctx.save();
- ctx.font = (weight || "700") + " " + size + 'px "Segoe UI",Tahoma,Arial,sans-serif';
- ctx.textAlign = align || "center";
- ctx.textBaseline = baseline || "alphabetic";
- ctx.direction = dir || "rtl";
- ctx.fillStyle = color || "#fff";
- ctx.fillText(text, x, y);
- ctx.restore();
-}
-
-function updatePaletteUI(accent, vis, aud){
- if(!$("paletteBar")) return;
- $("paletteBar").innerHTML =
-  `<span class="swatch" style="background:${accent}"></span>` +
-  `<span class="swatch" style="background:#0e1526"></span>` +
-  `<span class="swatch" style="background:#f5f7ff"></span>` +
-  `<span style="font-size:12px;color:#aeb8d4">الصوت: ${aud.voiceLevel}% • النبض: ${aud.voiceBeat}% • إضاءة الأسفل: ${vis.bottomBright}/255 • الحركة: ${vis.motionEnergy}%</span>`;
-}
-
-function drawAudioWaveStrip(x, y, w, accent, aud){
- if(!ctx || !hasVideo) return;
- const bars = 18;
- const gap = 4;
- const bw = Math.max(3, (w - gap * (bars - 1)) / bars);
- const boost = Math.max(0.25, aud.voiceLevel / 55);
- ctx.save();
- for(let i = 0; i < bars; i++){
-  const wave = (0.35 + 0.65 * Math.abs(Math.sin(i * 0.65 + performance.now() * 0.008))) * boost;
-  const bh = Math.max(4, Math.min(22, wave * 20));
-  const bx = x + i * (bw + gap);
-  ctx.fillStyle = aud.speaking ? accent : "rgba(255,255,255,0.28)";
-  roundRectPath(bx, y + (22 - bh) / 2, bw, bh, 2);
-  ctx.fill();
- }
- ctx.restore();
-}
-
-function drawSceneBase(t, accent, vis){
- if(!ctx) return;
- const vidReady = hasVideo && videoEl && videoEl.readyState >= 2;
- if(vidReady){
-  const vw = videoEl.videoWidth || W;
-  const vh = videoEl.videoHeight || H;
-  const sc = Math.max(W / vw, H / vh);
-  const sw = vw * sc, sh = vh * sc;
-  ctx.save();
-  ctx.drawImage(videoEl, (W - sw) / 2, (H - sh) / 2, sw, sh);
-  const botAlpha = vis.bottomBright > 165 ? 0.92 : 0.80;
-  const grad = ctx.createLinearGradient(0, H * 0.45, 0, H);
-  grad.addColorStop(0, "rgba(7,11,22,0.04)");
-  grad.addColorStop(0.64, "rgba(7,11,22,0.44)");
-  grad.addColorStop(1, `rgba(7,11,22,${botAlpha})`);
-  ctx.fillStyle = grad;
-  ctx.fillRect(0, 0, W, H);
-  ctx.restore();
-  return;
- }
-
- const style = $("bgStyle") ? $("bgStyle").value : "grid";
- const bgGrad = ctx.createLinearGradient(0, 0, W, H);
- bgGrad.addColorStop(0, "#11192e");
- bgGrad.addColorStop(1, "#070b14");
- ctx.fillStyle = bgGrad;
- ctx.fillRect(0, 0, W, H);
-
- const glow = ctx.createRadialGradient(W * 0.5, H * 0.45, 20, W * 0.5, H * 0.45, Math.max(W, H) * 0.45);
- glow.addColorStop(0, accent + "33");
- glow.addColorStop(1, "transparent");
- ctx.fillStyle = glow;
- ctx.fillRect(0, 0, W, H);
-
- if(style === "grid"){
-  ctx.save();
-  ctx.globalAlpha = 0.11;
-  ctx.strokeStyle = accent;
-  const step = Math.max(50, Math.round(Math.min(W, H) / 11));
-  for(let x = 0; x <= W; x += step){ ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, H); ctx.stroke(); }
-  for(let y = 0; y <= H; y += step){ ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(W, y); ctx.stroke(); }
-  ctx.restore();
- }else if(style === "waves"){
-  ctx.save();
-  for(let i = 0; i < 3; i++){
-   ctx.beginPath();
-   const by = H * (0.34 + i * 0.17);
-   for(let x = 0; x <= W + 24; x += 24){
-    const y = by + Math.sin(x * 0.008 + t * (1.1 + i * 0.25) + i) * 26;
-    if(x === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
-   }
-   ctx.lineTo(W, H); ctx.lineTo(0, H); ctx.closePath();
-   ctx.fillStyle = accent + (i === 0 ? "1c" : "10");
-   ctx.fill();
-  }
-  ctx.restore();
- }else{
-  ctx.save();
-  for(let i = 0; i < 22; i++){
-   const px = (((i * 73) % 100) / 100 * W + Math.sin(t * 0.5 + i) * 24 + W) % W;
-   const py = (((i * 41) % 100) / 100 * H + Math.cos(t * 0.45 + i) * 24 + H) % H;
-   ctx.globalAlpha = 0.25;
-   ctx.fillStyle = i % 3 === 0 ? "#fff" : accent;
-   ctx.beginPath();
-   ctx.arc(px, py, 3.2, 0, Math.PI * 2);
-   ctx.fill();
-  }
-  ctx.restore();
- }
-}
-
-function drawPhoto(t, layout, isPortrait, dir, motion){
- if(!ctx || !photo) return;
- const prog = ease(t / 0.9, motion);
- const scale = 1.03 - prog * 0.03;
- let bw = W * 0.34, bh = H * 0.42, cx = dir === "ltr" ? W * 0.75 : W * 0.25, cy = H * 0.45;
- if(layout === "lowerThird"){ bw = W * 0.16; bh = H * 0.13; cx = dir === "ltr" ? W * 0.15 : W * 0.85; cy = H * 0.77; }
- else if(isPortrait){ bw = W * 0.62; bh = H * 0.24; cx = W * 0.5; cy = H * 0.63; }
-
- const fit = Math.min(bw / photo.width, bh / photo.height);
- const sw = photo.width * fit * scale, sh = photo.height * fit * scale;
- ctx.save();
- ctx.globalAlpha = ease(t / 0.7, motion);
- roundRectPath(cx - sw / 2, cy - sh / 2, sw, sh, 16);
- ctx.clip();
- ctx.drawImage(photo, cx - sw / 2, cy - sh / 2, sw, sh);
- ctx.restore();
-}
- function draw(t){
- if(!ctx) return;
- try{
-  const vidReady = hasVideo && videoEl && videoEl.readyState >= 2;
-  let vis = { accent: sceneAccent, topBright: 120, midBright: 120, bottomBright: 120, motionEnergy: 0 };
-  if(vidReady){
-   vis = sampleVisualFromSource(videoEl, running || exporting);
-  }else if(photo){
-   vis = sampleVisualFromSource(photo, false);
-  }
-
-  const aud = sampleAudioFromVideo();
-
-  if($("accent") && performance.now() - lastAccentSync > 1200 && (vidReady || photo)){
-   sceneAccent = vis.accent;
-   if(!$("accent").dataset.manual){
-    $("accent").value = sceneAccent;
-   }
-   lastAccentSync = performance.now();
-  }
-
-  const accent = $("accent") ? $("accent").value : sceneAccent;
-  updatePaletteUI(accent, vis, aud);
-
-  const title = $("title") ? $("title").value : "";
-  const subtitle = $("subtitle") ? $("subtitle").value : "";
-  const isPortrait = H > W;
-  const plan = directorPlan(title, subtitle, vidReady, !!photo, isPortrait, vis, aud);
-  if($("directorBrief")) $("directorBrief").textContent = plan.brief;
-
-  const dur = getDuration();
-  const introDur = plan.motion === "snappy" ? 0.5 : plan.motion === "cinematic" ? 1.1 : 0.8;
-  const intro = ease(t / introDur, plan.motion);
-  const exit = 1 - ease((t - dur + 0.65) / 0.65, plan.motion);
-  const alpha = Math.max(0, Math.min(1, intro * exit));
-  const voiceLift = aud.speaking ? Math.min(8, aud.voiceLevel * 0.08) : 0;
-  const shift = (1 - intro) * (plan.motion === "snappy" ? 24 : 42) - voiceLift * 0.4;
-
-  ctx.clearRect(0, 0, W, H);
-  drawSceneBase(t, accent, vis);
-
-  if(plan.layout === "lowerThird"){
-   const bw = W * 0.86;
-   const bh = Math.max(134, H * 0.19);
-   const bx = W * 0.07;
-   const by = H * 0.65 + shift * 0.35;
-
-   ctx.save();
-   ctx.globalAlpha = alpha;
-   roundRectPath(bx, by, bw, bh, 16);
-   ctx.fillStyle = "rgba(12,17,32,0.90)";
-   ctx.fill();
-   ctx.lineWidth = aud.speaking ? 2.2 : 1.5;
-   ctx.strokeStyle = accent + (aud.speaking ? "cc" : "88");
-   ctx.stroke();
-
-   const barH = Math.max(24, Math.min(bh - 24, (bh - 36) * (0.65 + aud.voiceLevel / 180)));
-   ctx.fillStyle = accent;
-   roundRectPath(plan.dir === "ltr" ? bx + 8 : bx + bw - 14, by + (bh - barH) / 2, 6, barH, 4);
-   ctx.fill();
-
-   drawPhoto(t, plan.layout, isPortrait, plan.dir, plan.motion);
-   const tx = photo ? (plan.dir === "ltr" ? W * 0.54 : W * 0.44) : W * 0.5;
-   const subMaxW = photo ? W * 0.62 : W * 0.76;
-   const tFont = Math.round((isPortrait ? 28 : 34) * plan.titleScale);
-   const sFont = Math.round((isPortrait ? 18 : 21) * plan.subScale);
-
-   drawText(title, tx, by + bh * 0.30, tFont, "#ffffff", plan.dir, "center", "700", "middle");
-
-   ctx.font = `400 ${sFont}px "Segoe UI",Tahoma,Arial,sans-serif`;
-   ctx.textAlign = "center";
-   ctx.textBaseline = "middle";
-   ctx.direction = plan.dir;
-   ctx.fillStyle = "#d8dff4";
-   const ltLines = wrapTextLines(subtitle, subMaxW, 2);
-   ltLines.forEach((ln, idx) => {
-    ctx.fillText(ln, tx, by + bh * 0.58 + idx * (sFont * 1.2));
-   });
-
-   drawAudioWaveStrip(tx - Math.min(110, bw * 0.16), by + bh - 28, Math.min(220, bw * 0.32), accent, aud);
-   ctx.restore();
-  }else{
-   if(plan.layout === "card"){
-    ctx.save();
-    ctx.globalAlpha = alpha * 0.78;
-    roundRectPath(W * 0.06, H * 0.12, W * 0.88, H * 0.74, 22);
-    ctx.fillStyle = "rgba(18,24,42,0.86)";
-    ctx.fill();
-    ctx.strokeStyle = accent + "77";
-    ctx.lineWidth = 2;
-    ctx.stroke();
-    ctx.restore();
-   }
-
-   ctx.save();
-   ctx.globalAlpha = alpha;
-   ctx.fillStyle = accent;
-   const pulseW = Math.min(W * 0.84, Math.max(60, t * W * 0.55) + aud.voiceLevel * 1.4);
-   roundRectPath(W * 0.08, H * 0.23, pulseW, 5, 3);
-   ctx.fill();
-   ctx.restore();
-
-   drawPhoto(t, plan.layout, isPortrait, plan.dir, plan.motion);
-
-   let tx = W * 0.5, ty = H * 0.40;
-   let tSize = (isPortrait ? 46 : 62) * plan.titleScale;
-   let sSize = (isPortrait ? 24 : 28) * plan.subScale;
-   let maxW = W * 0.78;
-
-   if(plan.layout === "split" && photo && !isPortrait){
-    tx = plan.dir === "ltr" ? W * 0.28 : W * 0.72;
-    ty = H * 0.42;
-    tSize = 44 * plan.titleScale;
-    maxW = W * 0.42;
-   }else if(photo && isPortrait){
-    ty = H * 0.32;
-    maxW = W * 0.80;
-   }
-
-   ctx.save();
-   ctx.globalAlpha = alpha;
-   ctx.translate(0, shift);
-   drawText(title, tx, ty, Math.round(tSize), "#ffffff", plan.dir, "center", "700", "alphabetic");
-
-   ctx.font = `400 ${Math.round(sSize)}px "Segoe UI",Tahoma,Arial,sans-serif`;
-   ctx.textAlign = "center";
-   ctx.textBaseline = "top";
-   ctx.direction = plan.dir;
-   ctx.fillStyle = "#d5dcf0";
-
-   const lines = wrapTextLines(subtitle, maxW, 4);
-   lines.forEach((ln, idx) => {
-    ctx.fillText(ln, tx, ty + tSize * 0.72 + idx * (sSize * 1.35));
-   });
-   ctx.restore();
-  }
-
-  const prog = Math.min(1, t / dur);
-  ctx.fillStyle = "rgba(255,255,255,0.22)";
-  roundRectPath(W * 0.08, H * 0.91, W * 0.84, 5, 3);
-  ctx.fill();
-  ctx.fillStyle = accent;
-  roundRectPath(W * 0.08, H * 0.91, W * 0.84 * prog, 5, 3);
-  ctx.fill();
-  drawText("IRAQI MOTION STUDIO", W * 0.5, H * 0.96, 16, "#939dbd", "ltr", "center", "400", "alphabetic");
- }catch(err){
-  if($("status")) $("status").textContent = "تنبيه: " + err.message;
- }
-}
-
-function frame(){
- if(!running) return;
- const dur = getDuration();
- elapsed = (performance.now() - startTime) / 1000;
- if(elapsed >= dur){
-  elapsed = dur;
-  running = false;
-  draw(elapsed);
-  if(hasVideo && videoEl) videoEl.pause();
-  if($("status")) $("status").textContent = "انتهى المشهد";
-  return;
- }
- if(hasVideo && videoEl && videoEl.readyState >= 2){
-  const target = elapsed % Math.max(0.1, videoEl.duration || dur);
-  if(Math.abs(videoEl.currentTime - target) > 0.22) videoEl.currentTime = target;
- }
- draw(elapsed);
- raf = requestAnimationFrame(frame);
-}
-
-function play(){
- if(running) return;
- ensureAudioAnalyzer();
- const dur = getDuration();
- if(elapsed >= dur) elapsed = 0;
- running = true;
- startTime = performance.now() - elapsed * 1000;
- if(hasVideo && videoEl){
-  videoEl.currentTime = elapsed % Math.max(0.1, videoEl.duration || dur);
-  videoEl.play().catch(()=>{});
- }
- if($("status")) $("status").textContent = "المخرج يحلل الصوت والمشهد ويشغّل الموشن";
- raf = requestAnimationFrame(frame);
-}
-
-function pause(){
- running = false;
- cancelAnimationFrame(raf);
- if(hasVideo && videoEl) videoEl.pause();
- if($("status")) $("status").textContent = "تم إيقاف المعاينة";
-}
-
-if($("toggleManual") && $("manualBox")){
- $("toggleManual").addEventListener("click", () => {
-  $("manualBox").classList.toggle("open");
- });
-}
-if($("aspectRatio")){
- $("aspectRatio").addEventListener("change", () => { applyAspectRatio(); draw(elapsed); });
-}
-if($("accent")){
- $("accent").addEventListener("input", () => { $("accent").dataset.manual = "1"; draw(elapsed); });
-}
-if($("videoInput")){
- $("videoInput").addEventListener("change", e => {
-  const f = e.target.files && e.target.files[0];
-  if(!f) return;
-  pause();
-  prevFrameLuma = null;
-  if(videoURL) URL.revokeObjectURL(videoURL);
-  videoURL = URL.createObjectURL(f);
-  hasVideo = true;
-  elapsed = 0;
-  if($("accent")) delete $("accent").dataset.manual;
-  videoEl.src = videoURL;
-  videoEl.load();
-  videoEl.onloadeddata = () => {
-   videoEl.currentTime = 0;
-   const info = sampleVisualFromSource(videoEl, true);
-   sceneAccent = info.accent;
-   if($("accent")) $("accent").value = sceneAccent;
-   draw(0);
-   if($("status")) $("status").textContent = "تم تحميل الفيديو — اضغط تشغيل ليحلل المخرج صوته ومشهده";
-  };
-  draw(0);
- });
-}
-if($("imageInput")){
- $("imageInput").addEventListener("change", e => {
-  const f = e.target.files && e.target.files[0];
-  if(!f) return;
-  prevFrameLuma = null;
-  const u = URL.createObjectURL(f);
-  const img = new Image();
-  img.onload = () => {
-   if(photo && photo._url) URL.revokeObjectURL(photo._url);
-   photo = img;
-   photo._url = u;
-   if($("accent") && !$("accent").dataset.manual){
-    sceneAccent = sampleVisualFromSource(img, false).accent;
-    $("accent").value = sceneAccent;
-   }
-   draw(elapsed);
-  };
-  img.onerror = () => URL.revokeObjectURL(u);
-  img.src = u;
- });
-}
-
-["title","subtitle","layoutMode","motionMode","bgStyle","duration"].forEach(id => {
- const el = $(id);
- if(el){
-  el.addEventListener("input", () => draw(elapsed));
-  el.addEventListener("change", () => draw(elapsed));
- }
-});
-
-if($("play")) $("play").onclick = play;
-if($("pause")) $("pause").onclick = pause;
-
-if($("export")){
- $("export").onclick = async () => {
-  if(exporting) return;
-  if(!window.MediaRecorder || !canvas || !canvas.captureStream){
-   if($("status")) $("status").textContent = "المتصفح لا يدعم تسجيل الفيديو";
-   return;
-  }
-  try{
-   pause();
-   ensureAudioAnalyzer();
-   exporting = true;
-   $("export").disabled = true;
-   elapsed = 0;
-   prevFrameLuma = null;
-   if(hasVideo && videoEl) videoEl.currentTime = 0;
-   draw(0);
-
-   const vStream = canvas.captureStream(30);
-   const tracks = [...vStream.getVideoTracks()];
-   const stream = new MediaStream(tracks);
-   const types = ["video/webm;codecs=vp9","video/webm;codecs=vp8","video/webm"];
-   const mime = types.find(t => MediaRecorder.isTypeSupported(t));
-   const recorder = new MediaRecorder(stream, mime ? {mimeType: mime} : {});
-   const chunks = [];
-
-   recorder.ondataavailable = e => { if(e.data && e.data.size) chunks.push(e.data); };
-   recorder.onstop = () => {
-    const blob = new Blob(chunks, {type: recorder.mimeType || "video/webm"});
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = "iraqi-motion-studio.webm";
-    a.click();
-    setTimeout(() => URL.revokeObjectURL(url), 60000);
-    stream.getTracks().forEach(tr => tr.stop());
-    exporting = false;
-    $("export").disabled = false;
-    if($("status")) $("status").textContent = "اكتمل التصدير";
-   };
-
-   recorder.start();
-   if(hasVideo && videoEl) await videoEl.play().catch(()=>{});
-
-   const t0 = performance.now();
-   running = true;
-   startTime = t0;
-   if($("status")) $("status").textContent = "جاري تصدير الفيديو مع تحليل الصوت والمشهد...";
-
-   function step(){
-    if(!exporting) return;
-    elapsed = (performance.now() - t0) / 1000;
-    draw(Math.min(elapsed, getDuration()));
-    if(elapsed < getDuration()){
-     requestAnimationFrame(step);
-    }else{
-     running = false;
-     if(hasVideo && videoEl) videoEl.pause();
-     recorder.stop();
+      return { motif, moodLabel, accentColor, pace, listItems };
     }
-   }
-   requestAnimationFrame(step);
-  }catch(err){
-   exporting = false;
-   $("export").disabled = false;
-   if($("status")) $("status").textContent = "تعذر التصدير: " + err.message;
-  }
- };
-}
 
-applyAspectRatio();
-draw(0);
-})();
-</script>
+    function parseScriptToSegments(rawText, durationSec) {
+      const dur = Number.isFinite(durationSec) && durationSec > 0 ? durationSec : 30;
+      const lines = rawText
+        .split(/\r?\n/)
+        .map(l => l.trim())
+        .filter(Boolean);
+
+      const parsed = [];
+      let i = 0;
+
+      while (i < lines.length) {
+        // نمط SRT / VTT: 00:00:01,000 --> 00:00:05,000
+        const srtMatch = lines[i].match(
+          /(\d{1,2}:\d{2}(?::\d{2})?(?:[.,]\d+)?)\s*-->\s*(\d{1,2}:\d{2}(?::\d{2})?(?:[.,]\d+)?)/
+        );
+        if (srtMatch) {
+          const start = parseTimeToSec(srtMatch[1]);
+          const end = parseTimeToSec(srtMatch[2]);
+          i++;
+          const textParts = [];
+          while (
+            i < lines.length &&
+            !/^\d+$/.test(lines[i]) &&
+            !lines[i].includes("-->")
+          ) {
+            textParts.push(lines[i]);
+            i++;
+          }
+          const text = textParts.join(" ").trim();
+          if (start !== null && end !== null && end > start && text) {
+            parsed.push({ start, end, text });
+          }
+          continue;
+        }
+
+        // نمط سطر موقّت: 00:05 - 00:12 | نص
+        const inlineMatch = lines[i].match(
+          /^(\d{1,2}:\d{2}(?::\d{2})?)\s*(?:-|–|to)\s*(\d{1,2}:\d{2}(?::\d{2})?)\s*\|?\s*(.+)$/
+        );
+        if (inlineMatch) {
+          const start = parseTimeToSec(inlineMatch[1]);
+          const end = parseTimeToSec(inlineMatch[2]);
+          const text = inlineMatch[3].trim();
+          if (start !== null && end !== null && end > start && text) {
+            parsed.push({ start, end, text });
+          }
+          i++;
+          continue;
+        }
+
+        if (/^(WEBVTT|NOTE|\d+)$/i.test(lines[i])) {
+          i++;
+          continue;
+        }
+
+        parsed.push({ start: null, end: null, text: lines[i] });
+        i++;
+      }
+
+      if (!parsed.length) {
+        const chunkLen = dur / 3;
+        return [0, 1, 2].map(idx => ({
+          start: idx * chunkLen,
+          end: (idx + 1) * chunkLen,
+          text: `مقطع ديناميكي ${idx + 1}`,
+          ...detectMoodAndMotif(`مقطع ${idx + 1}`, idx)
+        }));
+      }
+
+      const unTimedCount = parsed.filter(p => p.start === null).length;
+      const fallbackStep = unTimedCount > 0 ? dur / unTimedCount : dur / parsed.length;
+      let cursor = 0;
+
+      return parsed.map((item, idx) => {
+        const start = item.start !== null ? item.start : cursor;
+        const end = item.end !== null ? item.end : Math.min(dur, cursor + fallbackStep);
+        if (item.start === null) cursor = end;
+        return {
+          start,
+          end: Math.max(start + 0.5, end),
+          text: item.text,
+          ...detectMoodAndMotif(item.text, idx)
+        };
+      });
+    }
+
+    function rebuildTimeline() {
+      const dur = videoEl.duration || 30;
+      segments = parseScriptToSegments(scriptTextarea.value, dur);
+      lastSegmentIndex = -1;
+      statusText.textContent = `تم تحليل ${segments.length} مقطعاً نصياً ومزامنتها مع الزمن.`;
+    }
+
+    function setupAudioAnalyser() {
+      if (!videoEl.src) return;
+      try {
+        if (!audioCtx) {
+          const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+          audioCtx = new AudioContextClass();
+          analyser = audioCtx.createAnalyser();
+          analyser.fftSize = 128;
+          freqData = new Uint8Array(analyser.frequencyBinCount);
+          audioSourceNode = audioCtx.createMediaElementSource(videoEl);
+          audioSourceNode.connect(analyser);
+          analyser.connect(audioCtx.destination);
+        }
+        if (audioCtx.state === "suspended") {
+          audioCtx.resume();
+        }
+      } catch (_) {
+        // يعمل المحرك بسلاسة حتى لو تعذّر ربط AudioContext ببعض المتصفحات
+      }
+    }
+
+    function getAudioEnergy() {
+      if (!analyser || !freqData || videoEl.paused) return 0.15;
+      analyser.getByteFrequencyData(freqData);
+      let sum = 0;
+      for (let i = 0; i < freqData.length; i++) sum += freqData[i];
+      return Math.min(1, sum / (freqData.length * 180));
+    }
+
+    function getCurrentSegment(t) {
+      if (!segments.length) return null;
+      for (let i = 0; i < segments.length; i++) {
+        if (t >= segments[i].start && t <= segments[i].end) {
+          return { seg: segments[i], index: i };
+        }
+      }
+      return { seg: segments[segments.length - 1], index: segments.length - 1 };
+    }
+         function drawMotifGraphic(seg, tLocal, energy, w, h) {
+      const isPortrait = h > w;
+      const boxW = isPortrait ? w * 0.84 : w * 0.44;
+      const boxH = isPortrait ? h * 0.34 : h * 0.56;
+      const x = isPortrait ? (w - boxW) / 2 : w * 0.52;
+      const y = isPortrait ? h * 0.1 : (h - boxH) / 2;
+      const pulse = 1 + energy * 0.05 * seg.pace;
+
+      ctx.save();
+      ctx.translate(x + boxW / 2, y + boxH / 2);
+      ctx.scale(pulse, pulse);
+      ctx.translate(-(x + boxW / 2), -(y + boxH / 2));
+
+      ctx.fillStyle = "rgba(18, 22, 34, 0.82)";
+      ctx.strokeStyle = seg.accentColor;
+      ctx.lineWidth = 3;
+      ctx.beginPath();
+      ctx.roundRect(x, y, boxW, boxH, 24);
+      ctx.fill();
+      ctx.stroke();
+
+      // شارة الفكرة العلوية (بدون طباعة نص خام طويل)
+      ctx.fillStyle = seg.accentColor;
+      ctx.beginPath();
+      ctx.roundRect(x + 18, y + 18, Math.min(boxW - 36, 220), 34, 12);
+      ctx.fill();
+
+      ctx.fillStyle = "#0b0e14";
+      ctx.font = "bold 17px system-ui, sans-serif";
+      ctx.textAlign = "right";
+      ctx.fillText(seg.moodLabel, x + boxW - 28, y + 41);
+
+      const innerTop = y + 74;
+      const innerH = boxH - 94;
+
+      if (seg.motif === "list") {
+        const count = Math.max(2, Math.min(4, seg.listItems.length || 3));
+        const stepH = innerH / count;
+        for (let k = 0; k < count; k++) {
+          const reveal = Math.min(1, Math.max(0, (tLocal - k * 0.25) * 3));
+          const itemY = innerTop + k * stepH + 6;
+          ctx.globalAlpha = reveal;
+          ctx.fillStyle = "rgba(255,255,255,0.06)";
+          ctx.beginPath();
+          ctx.roundRect(x + 20, itemY, boxW - 40, stepH - 12, 14);
+          ctx.fill();
+
+          ctx.fillStyle = seg.accentColor;
+          ctx.beginPath();
+          ctx.arc(x + boxW - 46, itemY + (stepH - 12) / 2, 16, 0, Math.PI * 2);
+          ctx.fill();
+
+          ctx.fillStyle = "#0b0e14";
+          ctx.font = "bold 16px system-ui, sans-serif";
+          ctx.textAlign = "center";
+          ctx.fillText(String(k + 1), x + boxW - 46, itemY + (stepH - 12) / 2 + 5);
+        }
+      } else if (seg.motif === "compare") {
+        const colW = (boxW - 54) / 2;
+        const swing = Math.sin(tLocal * 2.4) * 8;
+        ctx.fillStyle = "rgba(239, 68, 68, 0.16)";
+        ctx.beginPath();
+        ctx.roundRect(x + boxW - 22 - colW, innerTop + swing, colW, innerH - 16, 16);
+        ctx.fill();
+
+        ctx.fillStyle = "rgba(56, 189, 248, 0.18)";
+        ctx.beginPath();
+        ctx.roundRect(x + 22, innerTop - swing, colW, innerH - 16, 16);
+        ctx.fill();
+      } else if (seg.motif === "alert") {
+        const shake = Math.sin(tLocal * 18) * 5 * energy;
+        const cx = x + boxW / 2 + shake;
+        const cy = innerTop + innerH / 2;
+        ctx.strokeStyle = "#ef4444";
+        ctx.lineWidth = 5;
+        ctx.beginPath();
+        ctx.moveTo(cx, cy - 58);
+        ctx.lineTo(cx + 66, cy + 52);
+        ctx.lineTo(cx - 66, cy + 52);
+        ctx.closePath();
+        ctx.stroke();
+
+        ctx.fillStyle = "#ef4444";
+        ctx.font = "bold 46px system-ui, sans-serif";
+        ctx.textAlign = "center";
+        ctx.fillText("!", cx, cy + 36);
+      } else if (seg.motif === "question") {
+        const cx = x + boxW / 2;
+        const cy = innerTop + innerH / 2;
+        ctx.strokeStyle = seg.accentColor;
+        ctx.lineWidth = 6;
+        ctx.beginPath();
+        ctx.arc(cx, cy - 12, 42, Math.PI * 1.1, Math.PI * 0.25);
+        ctx.stroke();
+
+        ctx.fillStyle = seg.accentColor;
+        ctx.beginPath();
+        ctx.arc(cx - 12, cy + 44, 7, 0, Math.PI * 2);
+        ctx.fill();
+      } else {
+        const nodes = 3;
+        const gap = (boxW - 90) / (nodes - 1);
+        const cy = innerTop + innerH / 2;
+        ctx.strokeStyle = "rgba(255,255,255,0.25)";
+        ctx.lineWidth = 3;
+        ctx.beginPath();
+        ctx.moveTo(x + 45, cy);
+        ctx.lineTo(x + boxW - 45, cy);
+        ctx.stroke();
+
+        for (let n = 0; n < nodes; n++) {
+          const nx = x + 45 + n * gap;
+          const activeStep = Math.floor((tLocal * 1.6) % nodes) === n;
+          ctx.fillStyle = activeStep ? seg.accentColor : "#273044";
+          ctx.beginPath();
+          ctx.arc(nx, cy, activeStep ? 18 : 12, 0, Math.PI * 2);
+          ctx.fill();
+        }
+      }
+
+      // توظيف الصور المساندة المرفقة داخل إطار متحرك دون حجب المتحدث
+      if (loadedImages.length > 0) {
+        const img = loadedImages[segments.indexOf(seg) % loadedImages.length];
+        const iw = isPortrait ? boxW * 0.44 : boxW * 0.34;
+        const ih = isPortrait ? 90 : 125;
+        const ix = x + 22;
+        const iy = y + boxH - ih - 20;
+        const zoom = 1.03 + Math.sin(tLocal * 1.2) * 0.03;
+
+        ctx.save();
+        ctx.beginPath();
+        ctx.roundRect(ix, iy, iw, ih, 14);
+        ctx.clip();
+        ctx.translate(ix + iw / 2, iy + ih / 2);
+        ctx.scale(zoom, zoom);
+        ctx.drawImage(img, -iw / 2, -ih / 2, iw, ih);
+        ctx.restore();
+      }
+
+      ctx.restore();
+    }
+
+    function drawTransitionOverlay(seg, progress, w, h) {
+      if (progress >= 1) return;
+      const ease = 1 - Math.pow(1 - progress, 3);
+      ctx.save();
+
+      if (activeTransition === "wipe") {
+        const wipeW = w * (1 - ease);
+        ctx.fillStyle = seg.accentColor;
+        ctx.fillRect(0, 0, wipeW, h);
+      } else if (activeTransition === "split") {
+        const halfH = (h / 2) * (1 - ease);
+        ctx.fillStyle = "#0b0e14";
+        ctx.fillRect(0, 0, w, halfH);
+        ctx.fillRect(0, h - halfH, w, halfH);
+      } else if (activeTransition === "slide") {
+        const offsetX = w * (1 - ease);
+        ctx.fillStyle = "rgba(245, 183, 0, 0.25)";
+        ctx.fillRect(offsetX, 0, w, h);
+      } else if (activeTransition === "reframe") {
+        ctx.strokeStyle = seg.accentColor;
+        ctx.lineWidth = 14 * (1 - ease);
+        const pad = 40 * ease;
+        ctx.strokeRect(pad, pad, w - pad * 2, h - pad * 2);
+      }
+
+      ctx.restore();
+    }
+
+    function renderFrame(nowPerf) {
+      const w = canvas.width;
+      const h = canvas.height;
+      const energy = getAudioEnergy();
+      const currentT = videoEl.currentTime || 0;
+      const cur = getCurrentSegment(currentT);
+
+      ctx.clearRect(0, 0, w, h);
+      ctx.fillStyle = "#0b0e14";
+      ctx.fillRect(0, 0, w, h);
+
+      if (videoEl.readyState >= 2) {
+        const zoom = 1 + energy * 0.025;
+        ctx.save();
+        ctx.translate(w / 2, h / 2);
+        ctx.scale(zoom, zoom);
+        ctx.drawImage(videoEl, -w / 2, -h / 2, w, h);
+        ctx.restore();
+      }
+
+      if (cur) {
+        if (cur.index !== lastSegmentIndex) {
+          lastSegmentIndex = cur.index;
+          transitionStartPerf = nowPerf;
+          activeTransition = TRANSITIONS[cur.index % TRANSITIONS.length];
+          moodPill.textContent = `الحالة: ${cur.seg.moodLabel}`;
+          cuePill.textContent = `المقطع: ${cur.index + 1}/${segments.length}`;
+          directorNote.innerHTML = `<strong>توجيه المخرج الحالي:</strong> ${cur.seg.text} <span class="hint">(${activeTransition} / ${cur.seg.motif})</span>`;
+        }
+
+        const tLocal = Math.max(0, currentT - cur.seg.start);
+        drawMotifGraphic(cur.seg, tLocal, energy, w, h);
+
+        const transDur = 550;
+        const progress = Math.min(1, (nowPerf - transitionStartPerf) / transDur);
+        drawTransitionOverlay(cur.seg, progress, w, h);
+      }
+
+      const fmt = s => {
+        const sec = Math.floor(s || 0);
+        const m = String(Math.floor(sec / 60)).padStart(2, "0");
+        const r = String(sec % 60).padStart(2, "0");
+        return `${m}:${r}`;
+      };
+      timeText.textContent = `${fmt(videoEl.currentTime)} / ${fmt(videoEl.duration)}`;
+
+      requestAnimationFrame(renderFrame);
+    }
+
+    videoInput.addEventListener("change", e => {
+      const file = e.target.files?.[0];
+      if (!file) return;
+      videoEl.src = URL.createObjectURL(file);
+      videoEl.onloadedmetadata = () => {
+        rebuildTimeline();
+        statusText.textContent = `تم تحميل الفيديو (${Math.round(videoEl.duration)} ثانية).`;
+      };
+    });
+
+    scriptInput.addEventListener("change", async e => {
+      const file = e.target.files?.[0];
+      if (!file) return;
+      scriptTextarea.value = await file.text();
+      rebuildTimeline();
+    });
+
+    imageInput.addEventListener("change", async e => {
+      const files = Array.from(e.target.files || []);
+      loadedImages = await Promise.all(
+        files.map(f => new Promise(res => {
+          const img = new Image();
+          img.onload = () => res(img);
+          img.src = URL.createObjectURL(f);
+        }))
+      );
+      statusText.textContent = `تم تحميل ${loadedImages.length} صورة مساندة.`;
+    });
+
+    aspectSelect.addEventListener("change", () => {
+      if (aspectSelect.value === "9:16") {
+        stageWrap.classList.add("portrait");
+        canvas.width = 720;
+        canvas.height = 1280;
+      } else {
+        stageWrap.classList.remove("portrait");
+        canvas.width = 1280;
+        canvas.height = 720;
+      }
+      snapCanvas.width = canvas.width;
+      snapCanvas.height = canvas.height;
+    });
+
+    analyzeBtn.addEventListener("click", () => {
+      setupAudioAnalyser();
+      rebuildTimeline();
+    });
+
+    playBtn.addEventListener("click", () => {
+      if (!videoEl.src) {
+        statusText.textContent = "ارفع ملف فيديو أولاً.";
+        return;
+      }
+      setupAudioAnalyser();
+      if (!segments.length) rebuildTimeline();
+      if (videoEl.paused) {
+        videoEl.play();
+      } else {
+        videoEl.pause();
+      }
+    });
+
+    let recorder = null;
+    let recordedChunks = [];
+
+    exportBtn.addEventListener("click", () => {
+      if (!videoEl.src) {
+        statusText.textContent = "ارفع الفيديو قبل التصدير.";
+        return;
+      }
+      setupAudioAnalyser();
+      if (!segments.length) rebuildTimeline();
+
+      const canvasStream = canvas.captureStream(30);
+      if (audioCtx && audioSourceNode) {
+        const dest = audioCtx.createMediaStreamDestination();
+        audioSourceNode.connect(dest);
+        dest.stream.getAudioTracks().forEach(track => canvasStream.addTrack(track));
+      }
+
+      recordedChunks = [];
+      recorder = new MediaRecorder(canvasStream, { mimeType: "video/webm" });
+      recorder.ondataavailable = ev => {
+        if (ev.data.size > 0) recordedChunks.push(ev.data);
+      };
+      recorder.onstop = () => {
+        const blob = new Blob(recordedChunks, { type: "video/webm" });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = "MASTER_ENGINE_output.webm";
+        a.click();
+        exportBtn.style.display = "";
+        stopExportBtn.style.display = "none";
+        statusText.textContent = "تم تصدير الفيديو بصيغة WebM.";
+      };
+
+      recorder.start();
+      videoEl.currentTime = 0;
+      videoEl.play();
+      exportBtn.style.display = "none";
+      stopExportBtn.style.display = "";
+      statusText.textContent = "جارٍ تسجيل وتصدير المشهد...";
+    });
+
+    stopExportBtn.addEventListener("click", () => {
+      if (recorder && recorder.state !== "inactive") {
+        recorder.stop();
+        videoEl.pause();
+      }
+    });
+
+    requestAnimationFrame(renderFrame);
+  </script>
 </body>
 </html>
