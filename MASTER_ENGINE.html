@@ -32,6 +32,11 @@ canvas{
  background:#080d1b;border-radius:12px;margin:auto
 }
 .row{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.director-box{
+ background:#131927;border-right:4px solid #9875ff;
+ padding:12px;border-radius:8px;margin-top:12px;
+ font-size:14px;line-height:1.6;color:#d6dcf0
+}
 .status{font-size:13px;color:#b9a0ff;margin-top:10px}
 @media(max-width:550px){.row{grid-template-columns:1fr}}
 </style>
@@ -39,7 +44,7 @@ canvas{
 <body>
 <div class="app">
 <h1>IRAQI MOTION STUDIO</h1>
-<p>AI Motion Graphics Production Engine — Stage 1: Visual Form & Composition</p>
+<p>AI Motion Graphics Director — Context, Language & Video Aware Engine</p>
 
 <div class="panel">
 <label>عنوان المشهد</label>
@@ -47,6 +52,28 @@ canvas{
 
 <label>النص التوضيحي</label>
 <textarea id="subtitle">نحو تجربة بصرية مختلفة وأكثر احترافية</textarea>
+
+<div class="row">
+<div>
+<label>قرار مهندس التصميم (التكوين والمكان)</label>
+<select id="layoutMode">
+<option value="auto">تلقائي (يقرر مهندس التصميم)</option>
+<option value="lowerThird">عنوان سفلي لحماية المتحدث/المشهد</option>
+<option value="split">تقسيم متوازن (نص + عنصر مرئي)</option>
+<option value="hero">تركيز مركزي عالي التأثير</option>
+<option value="card">بطاقة تحريرية مؤطرة</option>
+</select>
+</div>
+<div>
+<label>أسلوب الحركة</label>
+<select id="motionMode">
+<option value="auto">تلقائي حسب طبيعة الفكرة</option>
+<option value="cinematic">انسياب سينمائي هادئ</option>
+<option value="snappy">إيقاع حاسم ومباشر</option>
+<option value="editorial">حضور تحريري متزن</option>
+</select>
+</div>
+</div>
 
 <div class="row">
 <div>
@@ -69,39 +96,32 @@ canvas{
 
 <div class="row">
 <div>
-<label>نمط التكوين البصري</label>
-<select id="layoutStyle">
-<option value="hero">تكوين سينمائي مركزي</option>
-<option value="lowerThird">عنوان سفلي (Lower Third للدمج)</option>
-<option value="card">بطاقة بصرية مؤطرة</option>
-</select>
-</div>
-<div>
 <label>لون التصميم</label>
 <input id="accent" type="color" value="#9875ff">
+</div>
+<div>
+<label>مدة المشهد بالثواني</label>
+<input id="duration" type="number" min="5" max="120" value="15">
 </div>
 </div>
 
 <div class="row">
 <div>
-<label>مدة المشهد بالثواني</label>
-<input id="duration" type="number" min="5" max="120" value="15">
+<label>إضافة مقطع فيديو للمشهد</label>
+<input id="videoInput" type="file" accept="video/*">
 </div>
 <div>
-<label>حجم الخط الأساسي</label>
-<select id="fontScale">
-<option value="1">متوازن (قياسي)</option>
-<option value="1.15">كبير (بارز)</option>
-<option value="0.9">ناعم (أنيق)</option>
-</select>
-</div>
-</div>
-
 <label>إضافة صورة</label>
 <input id="imageInput" type="file" accept="image/*">
+</div>
+</div>
 
-<label>إضافة ملف صوتي</label>
+<label>إضافة ملف صوتي خارجي (اختياري)</label>
 <input id="audioInput" type="file" accept="audio/*">
+
+<div class="director-box" id="directorBrief">
+جاري تحليل الفكرة والمشهد...
+</div>
 </div>
 
 <div class="panel">
@@ -117,6 +137,7 @@ canvas{
 </div>
 </div>
 
+<video id="video" playsinline preload="auto" style="display:none"></video>
 <audio id="audio" preload="auto"></audio>
 
 <script>
@@ -125,14 +146,18 @@ canvas{
 const $ = id => document.getElementById(id);
 const canvas = $("stage");
 const ctx = canvas.getContext("2d");
+const videoEl = $("video");
+const audioEl = $("audio");
 
 let photo = null;
+let hasVideo = false;
 let running = false;
 let exporting = false;
 let startTime = 0;
 let elapsed = 0;
 let raf = 0;
 let audioURL = null;
+let videoURL = null;
 
 let W = canvas.width;
 let H = canvas.height;
@@ -144,6 +169,97 @@ const particles = Array.from({length: 28}, (_, i) => ({
  speed: 0.25 + (i % 5) * 0.08,
  phase: i * 0.7
 }));
+
+function detectLanguageDirection(text){
+ const arabicChars = (text.match(/[\u0600-\u06FF]/g) || []).length;
+ const latinChars = (text.match(/[A-Za-z]/g) || []).length;
+ if(arabicChars === 0 && latinChars > 0) return "ltr";
+ if(latinChars > arabicChars * 1.5) return "ltr";
+ return "rtl";
+}
+
+function analyzeIdea(title, subtitle, hasVid, hasImg, isPortrait){
+ const combined = (title + " " + subtitle).trim();
+ const wordsCount = combined.split(/\s+/).filter(Boolean).length;
+ const dir = detectLanguageDirection(combined);
+
+ const urgentPattern = /(عاجل|تنبيه|خطير|مهم|سر|تحذير|احذر|لا تفوت|الآن|urgent|warning|alert|breaking|important|stop)/i;
+ const questionPattern = /[؟?]|(لماذا|كيف|متى|أين|هل|what|why|how|when|where|who)/i;
+ const statsPattern = /(\d+%|\d+\s*(مليون|ألف|سنة|يوم|خطوة|سبب|million|thousand|years|days|steps))/i;
+
+ let importance = "medium";
+ let intent = "editorial";
+ if(urgentPattern.test(combined) || (title.trim().length > 0 && title.trim().split(/\s+/).length <= 3)){
+  importance = "high";
+  intent = urgentPattern.test(combined) ? "alert" : "hook";
+ }else if(questionPattern.test(combined)){
+  importance = "medium";
+  intent = "question";
+ }else if(statsPattern.test(combined)){
+  importance = "high";
+  intent = "data";
+ }else if(wordsCount > 24){
+  importance = "detailed";
+  intent = "narrative";
+ }
+
+ const chosenLayout = $("layoutMode").value !== "auto"
+  ? $("layoutMode").value
+  : hasVid
+    ? "lowerThird"
+    : (hasImg && !isPortrait)
+      ? "split"
+      : (importance === "high" && wordsCount <= 12)
+        ? "hero"
+        : "card";
+
+ const chosenMotion = $("motionMode").value !== "auto"
+  ? $("motionMode").value
+  : (intent === "alert" || intent === "hook" || intent === "data")
+    ? "snappy"
+    : (intent === "question" || intent === "narrative")
+      ? "cinematic"
+      : "editorial";
+
+ const titleScale = importance === "high" ? 1.16 : importance === "detailed" ? 0.90 : 1.0;
+ const subScale = wordsCount > 20 ? 0.85 : importance === "high" ? 1.04 : 1.0;
+
+ const langLabel = dir === "ltr" ? "نص أجنبي (يسار ← يمين)" : "نص عربي (يمين ← يسار)";
+ const intentLabel = {
+  alert: "تنبيه/تركيز حاسم",
+  hook: "افتتاحية خاطفة للانتباه",
+  question: "تساؤل تفاعلي",
+  data: "معلومة/إحصاء بارز",
+  narrative: "سرد تفصيلي",
+  editorial: "طرح تحريري متزن"
+ }[intent];
+
+ const layoutLabel = {
+  lowerThird: "عنوان سفلي لحماية منطقة المتحدث والفيديو",
+  split: "تقسيم متوازن بين النص والصورة",
+  hero: "تركيز مركزي عالي التأثير",
+  card: "بطاقة تحريرية منظمة"
+ }[chosenLayout];
+
+ const motionLabel = {
+  snappy: "حركة حاسمة وسريعة الاستجابة",
+  cinematic: "انسياب سينمائي هادئ",
+  editorial: "حضور تحريري متزن"
+ }[chosenMotion];
+
+ const summary = `مهندس التصميم: ${langLabel} • ${intentLabel} • القرار: ${layoutLabel} مع ${motionLabel}.`;
+
+ return {
+  dir,
+  importance,
+  intent,
+  chosenLayout,
+  chosenMotion,
+  titleScale,
+  subScale,
+  summary
+ };
+}
 
 function applyAspectRatio(){
  const ratio = $("aspectRatio").value;
@@ -165,20 +281,58 @@ function duration(){
  return Math.max(5,Math.min(120,Number($("duration").value)||15));
 }
 
-function ease(t){
+function ease(t, mode){
  t=Math.max(0,Math.min(1,t));
+ if(mode === "snappy"){
+  return 1-Math.pow(1-t,4);
+ }
+ if(mode === "cinematic"){
+  return t < 0.5 ? 2*t*t : 1 - Math.pow(-2*t+2,2)/2;
+ }
  return 1-Math.pow(1-t,3);
 }
 
-function roundedText(text,x,y,size,color,weight="bold"){
+function drawStyledText(text,x,y,size,color,dir,align="center",weight="bold"){
  ctx.font=weight+" "+size+"px Arial";
- ctx.textAlign="center";
- ctx.direction="rtl";
+ ctx.textAlign=align;
+ ctx.direction=dir;
  ctx.fillStyle=color;
  ctx.fillText(text,x,y);
 }
 
-function drawBackground(t,color){
+function drawVideoLayer(t,color){
+ if(!hasVideo || videoEl.readyState < 2) return;
+ const vw = videoEl.videoWidth || W;
+ const vh = videoEl.videoHeight || H;
+ const coverScale = Math.max(W/vw, H/vh);
+ const sw = vw * coverScale;
+ const sh = vh * coverScale;
+ const vx = (W - sw) / 2;
+ const vy = (H - sh) / 2;
+
+ ctx.save();
+ ctx.drawImage(videoEl, vx, vy, sw, sh);
+
+ // Subtle contrast scrim so typography and graphics stay crisp over any video
+ const grad = ctx.createLinearGradient(0, H*0.35, 0, H);
+ grad.addColorStop(0, "rgba(8,13,27,0.12)");
+ grad.addColorStop(0.65, "rgba(8,13,27,0.45)");
+ grad.addColorStop(1, "rgba(8,13,27,0.82)");
+ ctx.fillStyle = grad;
+ ctx.fillRect(0, 0, W, H);
+
+ ctx.strokeStyle = color + "45";
+ ctx.lineWidth = 2;
+ ctx.strokeRect(W*0.03, H*0.03, W*0.94, H*0.94);
+ ctx.restore();
+}
+
+function drawBackground(t,color,motionMode){
+ if(hasVideo){
+  drawVideoLayer(t,color);
+  return;
+ }
+
  const style = $("bgStyle").value;
  const g=ctx.createLinearGradient(0,0,W,H);
  g.addColorStop(0,"#10182c");
@@ -245,29 +399,35 @@ function drawBackground(t,color){
  }
 }
 
-function drawImage(t, layout, isPortrait){
+function drawImageLayer(t, layout, isPortrait, dir, motionMode){
  if(!photo)return;
 
- const progress=ease(t/1.1);
+ const durFactor = motionMode === "snappy" ? 0.65 : motionMode === "cinematic" ? 1.2 : 0.95;
+ const progress=ease(t/durFactor, motionMode);
  const scale=1.04-progress*.04;
  const iw=photo.width,ih=photo.height;
 
  let boxW, boxH, cx, cy;
  if(layout === "lowerThird"){
-  boxW = W*0.22;
-  boxH = H*0.16;
-  cx = W*0.84;
+  boxW = W*0.18;
+  boxH = H*0.14;
+  cx = dir === "ltr" ? W*0.15 : W*0.85;
   cy = H*0.79;
- }else if(isPortrait){
-  boxW = W*0.64;
-  boxH = H*0.28;
-  cx = W*0.5;
-  cy = H*0.66;
- }else{
-  boxW = W*0.38;
+ }else if(layout === "split" && !isPortrait){
+  boxW = W*0.36;
   boxH = H*0.48;
-  cx = W*0.74;
+  cx = dir === "ltr" ? W*0.74 : W*0.26;
   cy = H*0.48;
+ }else if(isPortrait){
+  boxW = W*0.60;
+  boxH = H*0.24;
+  cx = W*0.5;
+  cy = H*0.64;
+ }else{
+  boxW = W*0.34;
+  boxH = H*0.42;
+  cx = dir === "ltr" ? W*0.75 : W*0.25;
+  cy = H*0.46;
  }
 
  const fit=Math.min(boxW/iw, boxH/ih);
@@ -276,7 +436,7 @@ function drawImage(t, layout, isPortrait){
  const y=cy-sh/2;
 
  ctx.save();
- ctx.globalAlpha=ease(t/.8);
+ ctx.globalAlpha=ease(t/(durFactor*0.75), motionMode);
  ctx.shadowColor="#000";
  ctx.shadowBlur=30;
  ctx.drawImage(photo,x,y,sw,sh);
@@ -287,50 +447,58 @@ function draw(t){
  const color=$("accent").value;
  const title=$("title").value;
  const subtitle=$("subtitle").value;
- const layout=$("layoutStyle").value;
- const scaleFactor=Number($("fontScale").value)||1;
  const isPortrait = H > W;
- const intro=ease(t/.9);
- const exit=1-ease((t-duration()+.65)/.65);
+ const hasImg = !!photo;
+
+ const plan = analyzeIdea(title, subtitle, hasVideo, hasImg, isPortrait);
+ $("directorBrief").textContent = plan.summary;
+
+ const introDur = plan.chosenMotion === "snappy" ? 0.55 : plan.chosenMotion === "cinematic" ? 1.15 : 0.85;
+ const intro=ease(t/introDur, plan.chosenMotion);
+ const exit=1-ease((t-duration()+.65)/.65, plan.chosenMotion);
+ const alpha = Math.max(0, Math.min(1, intro * exit));
 
  ctx.clearRect(0,0,W,H);
- drawBackground(t,color);
+ drawBackground(t,color,plan.chosenMotion);
 
- const hasImage=!!photo;
- const movement=(1-intro)*48;
+ const movement=(1-intro)*(plan.chosenMotion === "snappy" ? 30 : 52);
 
- if(layout === "lowerThird"){
-  const barW = W*0.86;
-  const barH = Math.max(125, H*0.18);
-  const barX = W*0.07;
-  const barY = H*0.70 + movement*0.4;
+ if(plan.chosenLayout === "lowerThird"){
+  const barW = W*0.88;
+  const barH = Math.max(132, H*0.19);
+  const barX = W*0.06;
+  const barY = H*0.71 + movement*0.35;
 
   ctx.save();
-  ctx.globalAlpha = intro*exit;
-  ctx.fillStyle = "#0b1020e6";
+  ctx.globalAlpha = alpha;
+  ctx.fillStyle = "rgba(11,16,32,0.88)";
   ctx.fillRect(barX, barY, barW, barH);
+
   ctx.fillStyle = color;
-  ctx.fillRect(barX + barW - 8, barY, 8, barH);
+  if(plan.dir === "ltr"){
+   ctx.fillRect(barX, barY, 8, barH);
+  }else{
+   ctx.fillRect(barX + barW - 8, barY, 8, barH);
+  }
 
-  drawImage(t, layout, isPortrait);
+  drawImageLayer(t, plan.chosenLayout, isPortrait, plan.dir, plan.chosenMotion);
 
-  const tx = hasImage ? W*0.44 : W*0.5;
-  const maxW = hasImage ? W*0.62 : W*0.76;
-  roundedText(title, tx, barY + barH*0.42, Math.round(36*scaleFactor), "#ffffff");
+  const tx = hasImg
+   ? (plan.dir === "ltr" ? W*0.54 : W*0.44)
+   : W*0.5;
+  const maxW = hasImg ? W*0.58 : W*0.78;
+  const tSize = Math.round((isPortrait ? 30 : 35) * plan.titleScale);
+  const sSize = Math.round((isPortrait ? 19 : 22) * plan.subScale);
 
-  ctx.font = Math.round(22*scaleFactor) + "px Arial";
-  ctx.textAlign = "center";
-  ctx.textBaseline = "top";
-  ctx.direction = "rtl";
-  ctx.fillStyle = "#c5cce0";
-  ctx.fillText(subtitle, tx, barY + barH*0.54, maxW);
+  drawStyledText(title, tx, barY + barH*0.38, tSize, "#ffffff", plan.dir, "center");
+  drawStyledText(subtitle, tx, barY + barH*0.56, sSize, "#d5dcf0", plan.dir, "center", "normal");
   ctx.restore();
  }else{
-  if(layout === "card"){
+  if(plan.chosenLayout === "card"){
    ctx.save();
-   ctx.globalAlpha = intro*exit*0.55;
-   ctx.fillStyle = "#141c2f";
-   ctx.strokeStyle = color + "66";
+   ctx.globalAlpha = alpha * 0.72;
+   ctx.fillStyle = "rgba(20,28,47,0.85)";
+   ctx.strokeStyle = color + "88";
    ctx.lineWidth = 2;
    const padX = W*0.06;
    const padY = H*0.12;
@@ -340,42 +508,42 @@ function draw(t){
   }
 
   ctx.save();
-  ctx.globalAlpha=intro*exit;
+  ctx.globalAlpha=alpha;
   ctx.fillStyle=color;
-  ctx.fillRect(W*.08,H*.24,Math.min(W*.84,t*(W*0.55)),5);
+  ctx.fillRect(W*.08,H*.24,Math.min(W*.84,t*(W*0.58)),5);
   ctx.restore();
 
-  drawImage(t, layout, isPortrait);
+  drawImageLayer(t, plan.chosenLayout, isPortrait, plan.dir, plan.chosenMotion);
 
   let textX = W*.5;
   let textY = H*.42;
-  let titleSize = (isPortrait ? 50 : 66) * scaleFactor;
-  let subSize = (isPortrait ? 26 : 30) * scaleFactor;
+  let titleSize = (isPortrait ? 48 : 64) * plan.titleScale;
+  let subSize = (isPortrait ? 25 : 29) * plan.subScale;
   let maxWidth = W*.80;
 
-  if(hasImage && !isPortrait){
-   textX = W*.30;
+  if(plan.chosenLayout === "split" && hasImg && !isPortrait){
+   textX = plan.dir === "ltr" ? W*0.28 : W*0.72;
    textY = H*.44;
-   titleSize = 48 * scaleFactor;
+   titleSize = 46 * plan.titleScale;
    maxWidth = W*.42;
-  }else if(hasImage && isPortrait){
-   textY = H*.34;
+  }else if(hasImg && isPortrait){
+   textY = H*.33;
    maxWidth = W*.82;
   }
 
   ctx.save();
-  ctx.globalAlpha=intro*exit;
+  ctx.globalAlpha=alpha;
   ctx.translate(0,movement);
 
-  roundedText(title, textX, textY, Math.round(titleSize), "#ffffff");
+  drawStyledText(title, textX, textY, Math.round(titleSize), "#ffffff", plan.dir, "center");
 
   ctx.font=Math.round(subSize)+"px Arial";
   ctx.textAlign="center";
   ctx.textBaseline="top";
-  ctx.direction="rtl";
-  ctx.fillStyle="#c5cce0";
+  ctx.direction=plan.dir;
+  ctx.fillStyle="#d0d7ec";
 
-  const words=subtitle.split(/\s+/);
+  const words=subtitle.split(/\s+/).filter(Boolean);
   let line="",lines=[];
   for(const word of words){
    const test=line?line+" "+word:word;
@@ -399,9 +567,9 @@ function draw(t){
  ctx.fillStyle=color;
  ctx.fillRect(W*.08,H*.91,W*.84*progress,5);
 
- roundedText(
+ drawStyledText(
   "IRAQI MOTION STUDIO",
-  W*.5,H*.96,17,"#8993ad","normal"
+  W*.5,H*.96,17,"#8993ad","ltr","center","normal"
  );
 }
 
@@ -412,9 +580,16 @@ function frame(){
   elapsed=duration();
   running=false;
   draw(elapsed);
-  if($("audio").src)$("audio").pause();
+  if(audioEl.src)audioEl.pause();
+  if(hasVideo)videoEl.pause();
   $("status").textContent="انتهى المشهد";
   return;
+ }
+ if(hasVideo && videoEl.readyState >= 2){
+  const targetVidTime = elapsed % Math.max(0.1, videoEl.duration || duration());
+  if(Math.abs(videoEl.currentTime - targetVidTime) > 0.18){
+   videoEl.currentTime = targetVidTime;
+  }
  }
  draw(elapsed);
  raf=requestAnimationFrame(frame);
@@ -425,9 +600,13 @@ function play(){
  if(elapsed>=duration())elapsed=0;
  running=true;
  startTime=performance.now()-elapsed*1000;
- if($("audio").src){
-  $("audio").currentTime=elapsed;
-  $("audio").play().catch(()=>{});
+ if(audioEl.src){
+  audioEl.currentTime=elapsed;
+  audioEl.play().catch(()=>{});
+ }
+ if(hasVideo){
+  videoEl.currentTime=elapsed % Math.max(0.1, videoEl.duration || duration());
+  videoEl.play().catch(()=>{});
  }
  $("status").textContent="المشهد قيد التشغيل";
  raf=requestAnimationFrame(frame);
@@ -436,13 +615,32 @@ function play(){
 function pause(){
  running=false;
  cancelAnimationFrame(raf);
- if($("audio").src)$("audio").pause();
+ if(audioEl.src)audioEl.pause();
+ if(hasVideo)videoEl.pause();
  $("status").textContent="تم إيقاف المعاينة";
 }
 
 $("aspectRatio").addEventListener("change",()=>{
  applyAspectRatio();
  draw(elapsed);
+});
+
+$("videoInput").addEventListener("change",e=>{
+ const file=e.target.files[0];
+ if(!file)return;
+ pause();
+ if(videoURL)URL.revokeObjectURL(videoURL);
+ videoURL=URL.createObjectURL(file);
+ videoEl.src=videoURL;
+ videoEl.muted=true;
+ videoEl.load();
+ videoEl.onloadeddata=()=>{
+  hasVideo=true;
+  elapsed=0;
+  videoEl.currentTime=0;
+  draw(0);
+  $("status").textContent="تم تحميل الفيديو وحلل مهندس التصميم المشهد";
+ };
 });
 
 $("imageInput").addEventListener("change",e=>{
@@ -466,14 +664,14 @@ $("audioInput").addEventListener("change",e=>{
  pause();
  if(audioURL)URL.revokeObjectURL(audioURL);
  audioURL=URL.createObjectURL(file);
- $("audio").src=audioURL;
- $("audio").load();
+ audioEl.src=audioURL;
+ audioEl.load();
  elapsed=0;
  draw(0);
  $("status").textContent="تم تحميل الصوت";
 });
 
-["title","subtitle","bgStyle","layoutStyle","accent","duration","fontScale"].forEach(id=>{
+["title","subtitle","layoutMode","motionMode","bgStyle","accent","duration"].forEach(id=>{
  $(id).addEventListener("input",()=>draw(elapsed));
  $(id).addEventListener("change",()=>draw(elapsed));
 });
@@ -490,8 +688,7 @@ $("export").onclick=async()=>{
   return;
  }
 
- const audio=$("audio");
- if(!audio.src){
+ if(!audioEl.src){
   $("status").textContent="أضف ملفاً صوتياً أولاً";
   return;
  }
@@ -501,12 +698,13 @@ $("export").onclick=async()=>{
   exporting=true;
   $("export").disabled=true;
   elapsed=0;
+  if(hasVideo)videoEl.currentTime=0;
   draw(0);
 
   const videoStream=canvas.captureStream(30);
-  const audioStream=audio.captureStream?
-    audio.captureStream():
-    audio.mozCaptureStream?.();
+  const audioStream=audioEl.captureStream?
+    audioEl.captureStream():
+    audioEl.mozCaptureStream?.();
 
   if(!audioStream||!audioStream.getAudioTracks().length){
    throw new Error("تعذر التقاط الصوت من المتصفح");
@@ -541,12 +739,14 @@ $("export").onclick=async()=>{
    stream.getTracks().forEach(t=>t.stop());
    exporting=false;
    $("export").disabled=false;
-   $("status").textContent="اكتمل التصدير";
+   $("status").textContent="اكتمل التصدير
+    ";
   };
 
   recorder.start();
-  audio.currentTime=0;
-  await audio.play();
+  audioEl.currentTime=0;
+  await audioEl.play();
+  if(hasVideo)await videoEl.play().catch(()=>{});
 
   const exportStart=performance.now();
   running=true;
@@ -557,11 +757,12 @@ $("export").onclick=async()=>{
    if(!exporting)return;
    elapsed=(performance.now()-exportStart)/1000;
    draw(Math.min(elapsed,duration()));
-   if(elapsed<duration()&&!audio.ended){
+   if(elapsed<duration()&&!audioEl.ended){
     requestAnimationFrame(exportFrame);
    }else{
     running=false;
-    audio.pause();
+    audioEl.pause();
+    if(hasVideo)videoEl.pause();
     recorder.stop();
    }
   }
